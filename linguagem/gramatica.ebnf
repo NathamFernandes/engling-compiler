@@ -1,0 +1,67 @@
+programa 						::=	cabecalho subprogramas instrucoes
+
+## CABEÇALHO 
+
+cabecalho 						::= tipoUsuario constantes
+tipoUsuario						::= tipo ID A_CHAVE tipoUsuarioDeclaracoes F_CHAVE
+tipoUsuarioDeclaracoes			::= declaracao TERMINADOR | declaracao TERMINADOR tipoUsuarioDeclaracoes
+constantes						::= | CONST declaracao TERMINADOR | CONST declaracao TERMINADOR constantes
+
+## SUBPROGRAMAS
+
+subprogramas					::= | subprograma TERMINADOR | subprograma TERMINADOR subprogramas
+subprograma 					::= funcao | procedimento
+funcao 							::= FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE
+procedimento					::= PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE
+parametros						::= tipo ID | tipo ID VIRGULA parametros
+
+## INSTRUCOES (stmts)
+
+instrucoes						::= instrucao TERMINADOR | instrucao TERMINADOR
+instrucao						::= atribuicao | declaracao | condicionalSe | condicionalCaso | lacoPara | lacoEnquanto | controle | retorno
+
+atribuicao						::= ID RECEBE expressao | declaracao RECEBE expressao | ID INCREMENTO | ID DECREMENTO
+
+declaracao						::= tipo ID
+
+condicionalSe					::= SE A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE 
+									{ SENAO_SE A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE } 
+									[ SENAO A_CHAVE instrucoes F_CHAVE ]
+
+condicionalCaso					::= ESCOLHA A_PARENTESE expressao F_PARENTESE A_CHAVE 
+									{ CASO expressao DOIS_PONTOS instrucoes PARE TERMINADOR } PADRAO DOIS_PONTOS instrucoes F_CHAVE 
+
+lacoPara						::= PARA A_PARENTESE atribuicao TERMINADOR expressao TERMINADOR atribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE
+
+lacoEnquanto					::= ENQUANTO A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE
+
+retorno							::= RETORNE expressao
+
+## Desmembrando LHS's
+
+expressao						::= expressaoLogicaE { OPERADOR_OU expressaoLogicaE}
+expressaoLogicaE				::= expressaoRelacional { OPERADOR_E expressaoRelacional }
+expressaoRelacional				::= expressaoAditiva [ operadorRelacional expressaoAditiva ]
+expressaoAditiva				::= expressaoMultiplicativa { OPERADOR_SOMA expressaoMultiplicativa | OPERADOR_SUBTRACAO expressaoMultiplicativa }
+expressaoMultiplicativa			::= expressaoExponencial { OPERADOR_MULTIPLICACAO expressaoExponencial | OPERADOR_DIVISAO expressaoExponencial 
+									| OPERADOR_MODULO expressaoExponencial }
+expressaoExponencial			::= expressaoUnaria { OPERADOR_EXPONENCIACAO expressaoUnaria }
+expressaoUnaria					::= { operadorUnario } expressaoPosfixa
+expressaoPosfixa				::= termo [ INCREMENTO | DECREMENTO ]
+termo							::= ID [sufixoId] | LITERAL_INTEIRO | LITERAL_FLUTUANTE | LITERAL_CARACTER | LITERAL_TEXTO | LITERAL_BOOLEANO
+									| A_PARENTESE tipo F_PARENTESE expressaoUnaria | A_PARENTESE expressao F_PARENTESE
+sufixoId						::= { A_COLCHETE expressao F_COLCHETE } | A_PARENTESE listaExpressoes F_PARENTESE
+listaExpressoes					::= expressao { VIRGULA expressao }
+
+operador 						::= operadorBooleano | operadorRelacional | operadorAlgebrico | operadorUnario
+operadorBooleano				::= OPERADOR_OU | OPERADOR_E | OPERADOR_NEGACAO
+operadorRelacional				::= OPERADOR_IGUAL | OPERADOR_DIFERENTE | OPERADOR_MENOR | OPERADOR_MENOR_IGUAL | OPERADOR_MAIOR | OPERADOR_MAIOR_IGUAL
+operadorAlgebrico				::=	OPERADOR_SOMA | OPERADOR_SUBTRACAO | OPERADOR_MULTIPLICACAO | OPERADOR_DIVISAO | OPERADOR_MODULO | OPERADOR_EXPONENCIACAO
+operadorUnario					::= OPERADOR_SUBTRACAO | OPERADOR_NEGACAO | OPERADOR_TAMANHO
+
+controle						::= PARE | CONTINUE 			
+
+tipo							::= tipoEscalar | tipoDimensional
+tipoEscalar						::= TIPO_INTEIRO | TIPO_CARACTER | TIPO_FLUTUANTE | TIPO_DECIMAL | TIPO_TEXTO | TIPO_BOOLEANO | TIPO_FILA | TIPO_PILHA 
+									| TIPO_DEQUE | TIPO_CONJUNTO | TIPO_GRAFO
+tipoDimensional					::= TIPO_VETOR A_TIPO tipo F_TIPO

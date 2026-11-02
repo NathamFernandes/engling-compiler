@@ -1,0 +1,132 @@
+// Esse é um comentário de uma linha
+/* Esse é um comentário
+de mais de uma linha */
+
+// Implementação MergeSort
+
+funcao Vetor inteiro mergeSort(Vetor inteiro lista_inicial, inteiro inicio, inteiro final) 
+{
+	se (inicio >= final) {
+		retorne lista_inicial;
+	}
+
+	inteiro meio = (inicio + final) / 2;
+
+	/* A atribuição de vetores é feita diretamente com o operador de igualdade "=".
+	Vetores, na linguagem, devem ser declarados com alguma incialização. */
+	Vetor inteiro lista_a = mergeSort(lista_inicial, inicio, meio);
+	Vetor inteiro lista_b = mergeSort(lista_inicial, meio, final);
+
+	retorne merge(lista_a, lista_b);
+}
+
+Vetor inteiro merge(Vetor inteiro lista_a, Vetor inteiro lista_b) {
+// Operador "#" é usado para tamanho |a|
+	inteiro tamanho_lista = #lista_a + #lista_b, 
+iterador_a = 0, iterador_b = 0, iterador_auxiliar = 0; 
+ 	
+// Vetor alocado dinamicamente com o tamanho específico informado. 
+. 	Vetor inteiro lista_auxiliar = novo Vetor inteiro tamanho_lista;
+
+	enquanto (iterador_a < #lista_a && iterador_b < #lista_b) {
+		se (lista_a[iterador_a] < lista_b[iterador_b]) {
+			lista_auxiliar[iterador_auxiliar] = lista_a[iterador_a];
+			iterador_a++;
+		} senao{
+			lista_auxiliar[iterador_auxiliar] = lista_b[iterador_b];
+			iterador_b++;
+		}
+		iterador_auxiliar++;
+	}
+
+	enquanto (iterador_a < #lista_a) {
+		lista_auxiliar[iterador_auxiliar] = lista_a[iterador_a];
+		iteador_auxiliar++;
+		iterador_a++;
+	}
+
+	enquanto (iterador_b < #lista_b) {
+		lista_auxiliar[iterador_auxiliar] = lista_b[iterador_b];
+		iteador_auxiliar++;
+		iterador_b++;
+	}
+		
+	retorne lista_auxiliar;
+}
+
+// Implementação QuickSOrt
+
+Vetor inteiro quickSort(Vetor inteiro lista_inicial, inteiro inicio, inteiro final) {
+	se (inicio >= final) {
+		retorne lista_inicial;
+	}
+
+	inteiro iterador_esquerda = início, iterador_direita = fim, auxiliar;
+	inteiro pivo = lista_inicial[(inicio + final) / 2];
+	
+	enquanto (iterador_esquerda <= iterador_direita) {
+		enquanto (iterador_esquerda < fim && 
+lista_inicial[iterador_esquerda] < pivo) {
+iterador_esquerda++;
+		}
+		enquanto (iterador_direita >= inicio &&
+				lista_inicial[iterador_direita] > pivo) {
+			iterador_direita--;
+		}
+
+		se (iterador_esquerda <= iterador_direita) {
+			auxiliar = lista_inicial[iterador_esquerda];
+			lista_inicial[iterador_esquerda] = lista_inicial[iterador_direita];
+			lista_inicial[iterador_direita] = auxiliar;
+			iterador_esquerda++;
+			iterador_direita--;
+		}
+	}
+
+	
+
+	se (inicio < iterador_direita) {
+		quickSort(lista_inicial, inicio, iterador_direita);
+	} se (iterador_esquerda < final) {
+		quickSort(lista_inicial, iterador_esquerda, final);
+	}
+	
+	retorne lista_inicial;
+}
+
+// Implementação programa principal
+
+inteiro tamanho_lista;
+
+saida("Insira o tamanho da lista a ser ordenada");
+tamanho_lista = entrada();
+
+enquanto (tamanho_lista < 1) {
+	saida("Tamanho inválido. Insira novamente.");
+	tamanho_lista = entrada();
+}
+
+Vetor inteiro meu_vetor = novo Vetor inteiro tamanho_lista;
+
+para (iterador = 0; iterador < #meu_vetor; iterador++) faca {
+	saida("Insira o " + (caractere) (iterador + 1) + "º número:")/
+	meu_vetor[iterador] = entrada();
+}
+
+Vetor inteiro vetor_merge = novo Vetor inteiro #meu_vetor;
+Vetor inteiro vetor_quick = novo Vetor inteiro #meu_vetor;
+
+vetor_merge = mergeSort(meu_vetor, 0, #vetor_merge - 1);
+vetor_quick = quickSort(meu_vetor, 0, #vetor_merge - 1);
+
+saida("Vetores ordenados:\n\nMerge Sort:\n\n");
+
+para (iterador = 0; iterador < #vetor_quick; iterador++) faca {
+	saida((caractere) vetor_quick[iterador] + ‘ ’);
+}
+
+saida("\n\nQuick Sort:\n\n");
+
+para (iterador = 0; iterador < #vetor_merge; iterador++) faca {
+	saida((caractere) vetor_merge[iterador] + ‘ ’);
+}
