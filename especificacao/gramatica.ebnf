@@ -5,7 +5,7 @@ programa 						::=	cabecalho subprogramas instrucoes
 cabecalho 						::= tipoUsuario constantes
 tipoUsuario						::= tipo ID A_CHAVE tipoUsuarioDeclaracoes F_CHAVE
 tipoUsuarioDeclaracoes			::= declaracao TERMINADOR | declaracao TERMINADOR tipoUsuarioDeclaracoes
-constantes						::= | CONST declaracao TERMINADOR | CONST declaracao TERMINADOR constantes
+constantes						::= | CONSTANTE declaracao TERMINADOR | CONSTANTE declaracao TERMINADOR constantes
 
 ## SUBPROGRAMAS
 
@@ -20,7 +20,7 @@ parametros						::= tipo ID | tipo ID VIRGULA parametros
 instrucoes						::= instrucao TERMINADOR | instrucao TERMINADOR
 instrucao						::= atribuicao | declaracao | condicionalSe | condicionalCaso | lacoPara | lacoEnquanto | controle | retorno
 
-atribuicao						::= ID RECEBE expressao | declaracao RECEBE expressao | ID INCREMENTO | ID DECREMENTO
+atribuicao						::= ID OPERADOR_ATRIBUICAO expressao | declaracao OPERADOR_ATRIBUICAO expressao | ID INCREMENTO | ID DECREMENTO
 
 declaracao						::= tipo ID
 

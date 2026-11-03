@@ -11,24 +11,35 @@ extern char * yytext;
 %}
 
 %union {
-	char * sValue;  /* string value */
+	int 	iValue;
+	char * 	sValue;
 	};
 
 %token <sValue> ID
-%token CONST PONTO_E_VIRGULA TIPO_ESCALAR
+%token <iValue> LITERAL_INTEIRO
+%token CONSTANTE TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE TIPO_DECIMAL TIPO_TEXTO TIPO_BOOLEANO OPERADOR_ATRIBUICAO TERMINADOR
 
 %start programa
 
 %%
 
-programa : cabecalho {} ;
+programa : cabecalho instrucoes {} ;
 
-cabecalho : constantes {} ;
+cabecalho : | constantes {} ; 
+constantes : constante TERMINADOR | constante TERMINADOR constantes {} ; 
 
-constantes : CONST declaracao PONTO_E_VIRGULA {}
-            | CONST declaracao PONTO_E_VIRGULA constantes {} ;
+constante : CONSTANTE declaracao | CONSTANTE atribuicao {} ;
 
-declaracao : TIPO_ESCALAR ID {printf("Hello World!");} ;
+instrucoes : instrucao TERMINADOR | instrucao TERMINADOR instrucoes {} ;
+
+instrucao : declaracao | atribuicao {} ;
+
+declaracao : tipo ID { printf("Hello!"); }
+atribuicao : tipo ID OPERADOR_ATRIBUICAO LITERAL_INTEIRO { printf("Hello World!"); }
+
+tipo : tipoEscalar {} ;
+
+tipoEscalar : TIPO_INTEIRO | TIPO_CARACTER | TIPO_FLUTUANTE | TIPO_DECIMAL | TIPO_TEXTO | TIPO_BOOLEANO {} ;
 
 %%
 

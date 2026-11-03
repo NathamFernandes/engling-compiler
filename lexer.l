@@ -1,126 +1,34 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include "y.tab.h"
 
-enum tokens {
-    TOKEN_EOF = 0,
-    TIPO_CHAVE = 258, ID, CONST, FUNCAO, PROCEDIMENTO, SE, SENAO_SE, PARA, FACA,
-    ENQUANTO, ESCOLHA, CASO, PARE, PADRAO, RETORNE, NOVO, VERDADEIRO, FALSO,
-    TIPO_ESCALAR, VETOR_ABRE, VETOR_FECHA,
-    LITERAL_INT, LITERAL_FLOAT, LITERAL_CHAR, LITERAL_TEXTO,
-    OP_ATRIBUICAO, OP_INCREMENTO, OP_DECREMENTO, OP_IGUAL, OP_DIFERENTE,
-    OP_MENOR, OP_MENOR_IGUAL, OP_MAIOR, OP_MAIOR_IGUAL,
-    OP_SOMA, OP_SUB, OP_MULT, OP_DIV, OP_MOD, OP_EXP, OP_COMPRIMENTO,
-    LOGICO_OU, LOGICO_E, LOGICO_NEG,
-    ABRE_CHAVE, FECHA_CHAVE, ABRE_PAR, FECHA_PAR, ABRE_COLCHETE, FECHA_COLCHETE,
-    PONTO_E_VIRGULA, DOIS_PONTOS, VIRGULA, SOBRECARGA
-};
-
-int linha_atual = 1;
+    extern int yyerror (char *msg);
 %}
 
-%option noyywrap
+%%
 
-/* Definições de Expressões Regulares Baseadas na Gramática */
-DIGITO              [0-9]
-LETRA               [a-zA-Z_]
-ALFANUM             [a-zA-Z0-9_]
-ESPACOS             [ \t\r]+
+[ \t\n]                     ;
+
+"constante"                 { return CONSTANTE; }
+
+"inteiro"                   { return TIPO_INTEIRO; }
+"caracter"                  { return TIPO_CARACTER; }
+"flutuante"                 { return TIPO_FLUTUANTE; }
+"decimal"                   { return TIPO_DECIMAL; }
+"texto"                     { return TIPO_TEXTO; }
+"booleano"                  { return TIPO_BOOLEANO; }
+
+"="                         { return OPERADOR_ATRIBUICAO; }
+";"                         { return TERMINADOR; }
+
+[0-9]+                      { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; }
+[a-zA-Z][a-zA-Z0-9_]*       { yylval.sValue = strdup(yytext); return ID; }
+.                           { yyerror("Caracter inválido"); }
 
 %%
 
-{ESPACOS}           { /* Ignora espaços e tabulações */ }
-"\n"                { linha_atual++; }
-
-"//".*              { /* Ignora comentários de linha */ }
-
- /* Palavras-Reservadas de Estruturas e Fluxo */
-"tipo"              { return TIPO_CHAVE; }
-"sobrecarga"        { return SOBRECARGA; }
-"const"             { return CONST; }
-"funcao"            { return FUNCAO; }
-"procedimento"      { return PROCEDIMENTO; }
-"se"                { return SE; }
-"senao se"          { return SENAO_SE; }
-"para"              { return PARA; }
-"faca"              { return FACA; }
-"enquanto"          { return ENQUANTO; }
-"escolha"           { return ESCOLHA; }
-"caso"              { return CASO; }
-"pare"              { return PARE; }
-"padrao"            { return PADRAO; }
-"retorne"           { return RETORNE; }
-"novo"              { return NOVO; }
-
- /* Literais Booleanos */
-"Verdadeiro"        { return VERDADEIRO; }
-"Falso"             { return FALSO; }
-
- /* Tipos Escalares Suportados pela Linguagem */
-"inteiro"|"caracter"|"flutuante"|"decimal"|"texto"|"booleano"|"Fila"|"Pilha"|"Deque"|"TabelaHash"|"Conjunto"|"FilaPrioridade"|"Grafo" { 
-    return TIPO_ESCALAR; 
-}
-
- /* Tipo Dimensional (Vetor < tipo >) - Casando o início da estrutura */
-"Vetor"             { return VETOR_ABRE; }
-
- /* Operadores de Incremento, Decremento e Lógicos */
-"++"                { return OP_INCREMENTO; }
-"--"                { return OP_DECREMENTO; }
-"||"                { return LOGICO_OU; }
-"&&"                { return LOGICO_E; }
-
- /* Operadores Relacionais */
-"=="                { return OP_IGUAL; }
-"!="                { return OP_DIFERENTE; }
-"<="                { return OP_MENOR_IGUAL; }
-">="                { return OP_MAIOR_IGUAL; }
-"<"                 { return OP_MENOR; }
-">"                 { return OP_MAIOR; }
-
- /* Operadores Aritméticos e Unários */
-"="                 { return OP_ATRIBUICAO; }
-"+"                 { return OP_SOMA; }
-"-"                 { return OP_SUB; }
-"*"                 { return OP_MULT; }
-"/"                 { return OP_DIV; }
-"%"                 { return OP_MOD; }
-"^"                 { return OP_EXP; }
-"~"                 { return LOGICO_NEG; }
-"#"                 { return OP_COMPRIMENTO; } /* Operador unário '#' na regra <exprUnaria> */
-
- /* Delimitadores e Pontuação */
-"{"                 { return ABRE_CHAVE; }
-"}"                 { return FECHA_CHAVE; }
-"("                 { return ABRE_PAR; }
-")"                 { return FECHA_PAR; }
-"["                 { return ABRE_COLCHETE; }
-"]"                 { return FECHA_COLCHETE; }
-";"                 { return PONTO_E_VIRGULA; }
-":"                 { return DOIS_PONTOS; }
-","                 { return VIRGULA; }
-
- /* Literais Estruturados (Float, Int, Char e Texto) */
-{DIGITO}+"."{DIGITO}+ { return LITERAL_FLOAT; }
-{DIGITO}+           { return LITERAL_INT; }
-"'"[^']"'"          { return LITERAL_CHAR; }  /* Captura qualquer caractere entre aspas simples */
-"\""[^\"]*"\""      { return LITERAL_TEXTO; } /* Captura cadeias de caracteres entre aspas duplas */
-
- /* Identificadores (<id>) */
-{LETRA}{ALFANUM}*   { return ID; }
-
- /* Tratamento de Erros Léxicos */
-.                   { printf("[Erro Léxico] Caractere inválido '%s' na linha %d\n", yytext, linha_atual); }
-
-%%
-
-/* Função de testes principal */
-int main(void) {
-    int token;
-    printf("Analisador Léxico pronto. Digite o código fonte:\n\n");
-    while ((token = yylex()) != TOKEN_EOF) {
-        printf("Token: %3d | Lexema: '%s'\n", token, yytext);
-    }
-    return 0;
-}
+#ifndef yywrap
+    int yywrap(void) { return 1; }
+#endif

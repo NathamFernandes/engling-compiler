@@ -1,1 +1,6 @@
 *.o
+*.h
+*.c
+*.gv
+*.output
+compiler

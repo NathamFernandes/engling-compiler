@@ -1,0 +1,4 @@
+inteiro meuInteiro = 10;
+inteiro meuInteiro = 10;
+
+caracter meuCaracter;
