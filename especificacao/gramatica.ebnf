@@ -20,22 +20,22 @@ parametros						::= tipo ID | tipo ID VIRGULA parametros
 instrucoes						::= instrucao TERMINADOR | instrucao TERMINADOR
 instrucao						::= atribuicao | declaracao | condicionalSe | condicionalCaso | lacoPara | lacoEnquanto | controle | retorno
 
-atribuicao						::= ID OPERADOR_ATRIBUICAO expressao | declaracao OPERADOR_ATRIBUICAO expressao | ID INCREMENTO | ID DECREMENTO
+atribuicao						::= ID OPERADOR_ATRIBUICAO expressao | declaracao OPERADOR_ATRIBUICAO expressao | ID OPERADOR_INCREMENTO | ID OPERADOR_DECREMENTO
 
 declaracao						::= tipo ID
 
-condicionalSe					::= SE A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE 
-									{ SENAO_SE A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE } 
-									[ SENAO A_CHAVE instrucoes F_CHAVE ]
+condicionalSe					::= SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE 
+									{ SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE } 
+									[ SENAO_TOK A_CHAVE instrucoes F_CHAVE ]
 
-condicionalCaso					::= ESCOLHA A_PARENTESE expressao F_PARENTESE A_CHAVE 
-									{ CASO expressao DOIS_PONTOS instrucoes PARE TERMINADOR } PADRAO DOIS_PONTOS instrucoes F_CHAVE 
+condicionalCaso					::= ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE 
+									{ CASO_TOK expressao DOIS_PONTOS instrucoes PARE_TOK TERMINADOR } PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE 
 
-lacoPara						::= PARA A_PARENTESE atribuicao TERMINADOR expressao TERMINADOR atribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE
+lacoPara						::= PARA_TOK A_PARENTESE atribuicao TERMINADOR expressao TERMINADOR atribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE
 
-lacoEnquanto					::= ENQUANTO A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE
+lacoEnquanto					::= ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE
 
-retorno							::= RETORNE expressao
+retorno							::= RETORNE_TOK expressao
 
 ## Desmembrando LHS's
 
@@ -59,7 +59,7 @@ operadorRelacional				::= OPERADOR_IGUAL | OPERADOR_DIFERENTE | OPERADOR_MENOR |
 operadorAlgebrico				::=	OPERADOR_SOMA | OPERADOR_SUBTRACAO | OPERADOR_MULTIPLICACAO | OPERADOR_DIVISAO | OPERADOR_MODULO | OPERADOR_EXPONENCIACAO
 operadorUnario					::= OPERADOR_SUBTRACAO | OPERADOR_NEGACAO | OPERADOR_TAMANHO
 
-controle						::= PARE | CONTINUE 			
+controle						::= PARE_TOK | CONTINUE_TOK 			
 
 tipo							::= tipoEscalar | tipoDimensional
 tipoEscalar						::= TIPO_INTEIRO | TIPO_CARACTER | TIPO_FLUTUANTE | TIPO_DECIMAL | TIPO_TEXTO | TIPO_BOOLEANO | TIPO_FILA | TIPO_PILHA 
