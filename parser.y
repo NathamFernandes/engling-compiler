@@ -22,7 +22,62 @@ extern char * yytext;
 %token <cValue> LITERAL_CARACTER
 %token <fValue> LITERAL_FLUTUANTE
 
-%token CONSTANTE TIPO A_CHAVE F_CHAVE A_PARENTESE F_PARENTESE A_COLCHETE F_COLCHETE TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE TIPO_DECIMAL TIPO_TEXTO TIPO_BOOLEANO OPERADOR_INCREMENTO OPERADOR_DECREMENTO OPERADOR_ATRIBUICAO TERMINADOR FUNCAO PROCEDIMENTO RETORNE_TOK TIPO_VETOR TIPO_FILA TIPO_PILHA TIPO_DEQUE TIPO_CONJUNTO TIPO_GRAFO SE_TOK SENAO_TOK SENAO_SE_TOK PARA_TOK FACA_TOK ENQUANTO_TOK ESCOLHA_TOK CASO_TOK PARE_TOK CONTINUE_TOK PADRAO_TOK VIRGULA DOIS_PONTOS MENOR MAIOR OPERADOR_SOMA OPERADOR_SUBTRACAO OPERADOR_MULTIPLICACAO OPERADOR_DIVISAO OPERADOR_MODULO OPERADOR_EXPONENCIACAO OPERADOR_TAMANHO 
+
+/* ========================================================================== */
+/*                         ESTRUTURAS E DECLARAÇÕES                           */
+/* ========================================================================== */
+%token TIPO         CONSTANTE     FUNCAO
+%token PROCEDIMENTO RETORNE_TOK
+
+/* ========================================================================== */
+/*                               TIPOS DE DADOS                               */
+/* ========================================================================== */
+/* Tipos Primitivos */
+%token TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE
+%token TIPO_DECIMAL TIPO_TEXTO    TIPO_BOOLEANO
+
+/* Tipos Estruturados */
+%token TIPO_VETOR   TIPO_FILA     TIPO_PILHA
+%token TIPO_DEQUE   TIPO_CONJUNTO TIPO_GRAFO
+
+/* ========================================================================== */
+/*                            CONTROLE DE FLUXO                               */
+/* ========================================================================== */
+%token SE_TOK       SENAO_TOK     SENAO_SE_TOK
+%token PARA_TOK     FACA_TOK      ENQUANTO_TOK
+%token ESCOLHA_TOK  CASO_TOK      PARE_TOK
+%token CONTINUE_TOK PADRAO_TOK
+
+/* ========================================================================== */
+/*                                OPERADORES                                  */
+/* ========================================================================== */
+/* Aritméticos e Especiais */
+%token OPERADOR_INCREMENTO    OPERADOR_DECREMENTO
+%token OPERADOR_SOMA          OPERADOR_SUBTRACAO
+%token OPERADOR_MULTIPLICACAO OPERADOR_DIVISAO
+%token OPERADOR_MODULO        OPERADOR_EXPONENCIACAO
+%token OPERADOR_TAMANHO
+
+/* Atribuição e Relacionais */
+%token OPERADOR_ATRIBUICAO    MENOR         MAIOR
+
+/* ========================================================================== */
+/*                        DELIMITADORES E PONTUAÇÃO                           */
+/* ========================================================================== */
+%token VIRGULA      DOIS_PONTOS   TERMINADOR
+
+/* Escopo e Agrupamento */
+%token A_PARENTESE  F_PARENTESE
+%token A_CHAVE      F_CHAVE
+%token A_COLCHETE   F_COLCHETE
+
+/* ========================================================================== */
+/*                   LITERAIS, IDENTIFICADORES E VARIÁVEIS                    */
+/* ========================================================================== */
+%token ID
+%token LITERAL_INTEIRO  LITERAL_FLUTUANTE LITERAL_BOOLEANO
+%token LITERAL_CARACTER LITERAL_TEXTO
+
 
 %start programa
 
