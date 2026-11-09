@@ -7,6 +7,12 @@
     extern int yyerror (char *msg);
 %}
 
+/* Macros/Defines/Variáveis do lex ???? */
+
+DIGITO      [0-9]
+CARACTER    [a-zA-Z_]
+ID          {CARACTER}({CARACTER}|{DIGITO})*
+
 %%
 
 "//".*                      ;
@@ -81,9 +87,14 @@
 ":"                         { return DOIS_PONTOS; }
 ","                         { return VIRGULA; }
 
-[0-9]+                      { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; }
-[a-zA-Z][a-zA-Z0-9_]*       { yylval.sValue = strdup(yytext); return ID; }
-.                           { yyerror("Caracter inválido"); }
+{DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; } /* Reconhecimento de inteiros             */
+{DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLOAT; }   /* Reconhecimento de pontos flutuantes    */
+\'([^\']\\.)\'              { yylval.cValue = yytext[1]; return LITERAL_CHAR; }       /* Reconhecimento de caracter             */
+\"([^\"\\]\\.)*\"           { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; } /* Reconhecimento de strings              */
+{ID}                        { yylval.sValue = strdup(yytext); return ID; }            /* Reconhecimento de variável             */
+/* [a-zA-Z][a-zA-Z0-9_]*       { yylval.sValue = strdup(yytext); return ID; }            /* Reconhecimento de variável             */
+
+.                           { yyerror("Caracter inválido"); }                         /* Tratamento de erro léxico              */
 
 %%
 
