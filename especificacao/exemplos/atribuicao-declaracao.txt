@@ -1,0 +1,11 @@
+inteiro meuInteiro = 10;
+inteiro meuInteiro = 10;
+
+caracter meuCaracter;
+
+booleano meuBool = 10;
+
+meuBool ++;
+meuBool --;
+
+teste = 10;

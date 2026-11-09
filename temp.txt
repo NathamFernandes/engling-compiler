@@ -57,8 +57,6 @@
 "Vetor"             { return VETOR_ABRE; }
 
  /* Operadores de Incremento, Decremento e Lógicos
-"++"                { return OP_INCREMENTO; }
-"--"                { return OP_DECREMENTO; }
 "||"                { return LOGICO_OU; }
 "&&"                { return LOGICO_E; }
 

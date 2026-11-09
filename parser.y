@@ -17,29 +17,62 @@ extern char * yytext;
 
 %token <sValue> ID
 %token <iValue> LITERAL_INTEIRO
-%token CONSTANTE TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE TIPO_DECIMAL TIPO_TEXTO TIPO_BOOLEANO OPERADOR_ATRIBUICAO TERMINADOR
+%token CONSTANTE TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE TIPO_DECIMAL TIPO_TEXTO TIPO_BOOLEANO OPERADOR_INCREMENTO OPERADOR_DECREMENTO OPERADOR_ATRIBUICAO TERMINADOR
 
 %start programa
 
 %%
 
-programa : cabecalho instrucoes {} ;
+programa	: cabecalho instrucoes	{} 
+			| instrucoes 			{} 
+			;
 
-cabecalho : | constantes {} ; 
-constantes : constante TERMINADOR | constante TERMINADOR constantes {} ; 
+cabecalho	: constantes tipoUsuario	{} 
+			; 
 
-constante : CONSTANTE declaracao | CONSTANTE atribuicao {} ;
+constantes	: constante TERMINADOR				{} 
+			| constante TERMINADOR constantes	{} 
+			; 
 
-instrucoes : instrucao TERMINADOR | instrucao TERMINADOR instrucoes {} ;
+constante	: CONSTANTE declaracao	{}
+			| CONSTANTE atribuicao 	{} 
+			;
 
-instrucao : declaracao | atribuicao {} ;
+tipoUsuario	: TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE	{}
+			;
 
-declaracao : tipo ID { printf("Hello!"); }
-atribuicao : tipo ID OPERADOR_ATRIBUICAO LITERAL_INTEIRO { printf("Hello World!"); }
+tipoUsuarioDeclaracoes	:
 
-tipo : tipoEscalar {} ;
+instrucoes	: instrucao TERMINADOR 							{}
+			| instrucao TERMINADOR instrucoes 				{} 
+			;
 
-tipoEscalar : TIPO_INTEIRO | TIPO_CARACTER | TIPO_FLUTUANTE | TIPO_DECIMAL | TIPO_TEXTO | TIPO_BOOLEANO {} ;
+instrucao 	: declaracao	 								{} 
+			| atribuicao 									{} 
+			;
+
+atribuicao 			: declaracao OPERADOR_ATRIBUICAO expressao 		{}
+					| ID OPERADOR_ATRIBUICAO expressao 				{}
+					| ID OPERADOR_INCREMENTO						{}
+					| ID OPERADOR_DECREMENTO 						{ printf("Hello World!"); }
+					;
+
+declaracao 			: tipo ID	 									{ printf("Hello!"); } 
+					;
+
+expressao 			: LITERAL_INTEIRO	 							{} 
+					;
+
+tipo 				: tipoEscalar 									{} 
+					;
+
+tipoEscalar 		: TIPO_INTEIRO  								{}
+					| TIPO_CARACTER  								{}
+					| TIPO_FLUTUANTE  								{}
+					| TIPO_DECIMAL  								{}
+					| TIPO_TEXTO  									{}
+					| TIPO_BOOLEANO 								{} 
+					;
 
 %%
 

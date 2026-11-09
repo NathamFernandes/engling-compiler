@@ -4,11 +4,14 @@
 
 - Analisador léxico (lexer/scanner)
 
-- [ ] Corrigir erro de tokens
-- [ ] Alterar nome das 
+- [x] Corrigir erro de tokens
+- [ ] Implementar atribuição
+- [ ] Implementar
 
 - Analisador sintática (parser)
 
+- [ ] Implementar atribuição
+- [ ] Implementar
 
 ### Sugestões:
 

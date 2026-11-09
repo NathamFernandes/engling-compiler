@@ -11,6 +11,7 @@
 
 [ \t\n]                     ;
 
+"tipo"                      { return TIPO; }
 "constante"                 { return CONSTANTE; }
 
 "inteiro"                   { return TIPO_INTEIRO; }
@@ -20,6 +21,8 @@
 "texto"                     { return TIPO_TEXTO; }
 "booleano"                  { return TIPO_BOOLEANO; }
 
+"++"                        { return OPERADOR_INCREMENTO; }
+"--"                        { return OPERADOR_DECREMENTO; }
 "="                         { return OPERADOR_ATRIBUICAO; }
 ";"                         { return TERMINADOR; }
 
