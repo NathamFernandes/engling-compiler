@@ -9,7 +9,9 @@
 
 %%
 
-[ \t\n]                     ;
+"//".*                      ; /* ignora comentarios de uma linha */
+"/*"([^*]|\*+[^*/])*\*+"/"  ; /* Ignora comentários de múltiplas linhas */
+[ \t\r\n]                     ;
 
 "tipo"                      { return TIPO; }
 "constante"                 { return CONSTANTE; }
