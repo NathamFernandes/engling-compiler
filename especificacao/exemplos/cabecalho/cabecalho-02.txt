@@ -1,0 +1,5 @@
+// Mais de uma constante
+
+constante inteiro meuInteiro = 10;
+constante caracter meuCaracter = 10;
+

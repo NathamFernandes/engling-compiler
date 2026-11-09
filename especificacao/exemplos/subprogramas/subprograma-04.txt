@@ -1,0 +1,25 @@
+/* 3 funções */
+
+// Função com 0 parâmetro
+
+funcao inteiro minhaFuncao2() {
+    inteiro x;
+
+    retorne x;
+};
+
+// Função com 1 parâmetro
+
+funcao inteiro minhaFuncao(inteiro x) {
+    inteiro x;
+
+    retorne x;
+};
+
+// Função com 2 parâmetros
+
+funcao inteiro minhaFuncao3(inteiro x, caracter y) {
+    inteiro x;
+
+    retorne x;
+};

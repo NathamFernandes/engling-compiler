@@ -1,0 +1,55 @@
+// Misturando funções e procedimentos
+
+// Função com 0 parâmetro
+
+funcao inteiro minhaFuncao() {
+    inteiro x;
+
+    retorne x;
+};
+
+// procedimento com 0 parâmetro
+
+procedimento minhaFuncao() {
+    inteiro x;
+};
+
+// procedimento com 1 parâmetro
+
+procedimento minhaFuncao(vetor<caracter> x) {};
+
+// Função com 1 parâmetros
+
+funcao inteiro minhaFuncao(inteiro x) {
+    retorne z;
+};
+
+// procedimento com 2 parâmetro
+
+procedimento minhaFuncao(vetor<caracter> x, inteiro x) {};
+
+/* 3 funções */
+
+// Função com 0 parâmetro
+
+funcao inteiro minhaFuncao2() {
+    inteiro x;
+
+    retorne x;
+};
+
+// Função com 1 parâmetro
+
+funcao inteiro minhaFuncao(inteiro x) {
+    inteiro x;
+
+    retorne x;
+};
+
+// Função com 2 parâmetros
+
+funcao inteiro minhaFuncao3(inteiro x, caracter y) {
+    inteiro x;
+
+    retorne x;
+};

@@ -1,0 +1,3 @@
+// procedimento com 2 parâmetro
+
+procedimento minhaFuncao(vetor<caracter> x, inteiro x) {};

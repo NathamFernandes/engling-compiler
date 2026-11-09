@@ -45,6 +45,8 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 ")"                         { return F_PARENTESE; }
 "["                         { return A_COLCHETE; }
 "]"                         { return F_COLCHETE; }
+"<"                         { return MENOR; }
+">"                         { return MAIOR; }
 
 "Verdadeiro"                { yylval.iValue = 1; return LITERAL_BOOLEANO; }
 "Falso"                     { yylval.iValue = 0; return LITERAL_BOOLEANO; }

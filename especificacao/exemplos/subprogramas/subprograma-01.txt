@@ -1,0 +1,7 @@
+// Função com 0 parâmetro
+
+funcao inteiro minhaFuncao() {
+    inteiro x;
+
+    retorne x;
+};

@@ -1,0 +1,3 @@
+// Apenas uma constante
+
+constante inteiro meuInteiro = 10;

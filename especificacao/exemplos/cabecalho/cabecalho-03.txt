@@ -1,0 +1,7 @@
+// Apenas uma declaracação de tipo do usuário
+
+tipo {
+    inteiro x;
+    inteiro y;
+    caracter z;
+} meuTipo;

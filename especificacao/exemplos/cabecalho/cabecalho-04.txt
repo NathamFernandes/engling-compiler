@@ -1,0 +1,11 @@
+// Mais de um tipo de usuário
+
+tipo {
+    inteiro z;
+    texto novo;
+} novoTipo;
+
+tipo {
+    inteiro z;
+    texto novo;
+} novoTipo;

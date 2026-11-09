@@ -1,3 +1,5 @@
+// Teste completo
+
 constante inteiro MEUINT = 10;
 constante inteiro novoInt = 20;
 

@@ -1,0 +1,5 @@
+// Função com 1 parâmetros
+
+funcao inteiro minhaFuncao(inteiro x) {
+    retorne z;
+};
