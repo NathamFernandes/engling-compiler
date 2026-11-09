@@ -1,0 +1,13 @@
+constante inteiro MEUINT = 10;
+constante inteiro novoInt = 20;
+
+tipo {
+    inteiro x;
+    inteiro y;
+    caracter z;
+} meuTipo;
+
+tipo {
+    inteiro z;
+    texto novo;
+} novoTipo;

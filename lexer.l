@@ -9,18 +9,16 @@
 
 %%
 
-"//".*                      ; /* ignora comentarios de uma linha */
-"/*"([^*]|\*+[^*/])*\*+"/"  ; /* Ignora comentários de múltiplas linhas */
-[ \t\r\n]                     ;
+"//".*                      ;
+"/*"([^*]|\*+[^*/])*\*+"/"  ;
+[ \t\r\n]                   ;
 
 "tipo"                      { return TIPO; }
 "constante"                 { return CONSTANTE; }
 "funcao"                    { return FUNCAO; }
 "procedimento"              { return PROCEDIMENTO; }
-"novo"                      { return NOVO_TOK; }
 "retorne"                   { return RETORNE_TOK; }
 
-/* Tipos suportados pela linguagem (primitivos e estruturados) */
 "inteiro"                   { return TIPO_INTEIRO; }
 "caracter"                  { return TIPO_CARACTER; }
 "flutuante"                 { return TIPO_FLUTUANTE; }
@@ -32,28 +30,36 @@
 "fila"                      { return TIPO_FILA; }
 "pilha"                     { return TIPO_PILHA; }
 "deque"                     { return TIPO_DEQUE; }
-"hash"                      { return TIPO_HASH; }
 "conjunto"                  { return TIPO_CONJUNTO; }
 "grafo"                     { return TIPO_GRAFO; }
 
-/* Literais booleanos */
+"{"                         { return A_CHAVE; }
+"}"                         { return F_CHAVE; }
+"("                         { return A_PARENTESE; }
+")"                         { return F_PARENTESE; }
+"["                         { return A_COLCHETE; }
+"]"                         { return F_COLCHETE; }
+
 "Verdadeiro"                { yylval.iValue = 1; return LITERAL_BOOLEANO; }
 "Falso"                     { yylval.iValue = 0; return LITERAL_BOOLEANO; }
 
-/* Tokens de controle de fluxo */
 "se"                        { return SE_TOK; }
 "senao"                     { return SENAO_TOK; }
+"senaose"                   { return SENAO_SE_TOK; }
 "para"                      { return PARA_TOK; }
 "faca"                      { return FACA_TOK; }
 "enquanto"                  { return ENQUANTO_TOK; }
 "escolha"                   { return ESCOLHA_TOK; }
 "caso"                      { return CASO_TOK; }
 "pare"                      { return PARE_TOK; }
+"continue"                  { return CONTINUE_TOK; }
 "padrao"                    { return PADRAO_TOK; }
 
 "++"                        { return OPERADOR_INCREMENTO; }
 "--"                        { return OPERADOR_DECREMENTO; }
 "="                         { return OPERADOR_ATRIBUICAO; }
+","                         { return VIRGULA; }
+":"                         { return DOIS_PONTOS; }
 ";"                         { return TERMINADOR; }
 
 [0-9]+                      { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; }
