@@ -71,35 +71,26 @@ extern char * yytext;
 %token A_CHAVE      F_CHAVE
 %token A_COLCHETE   F_COLCHETE
 
-/* ========================================================================== */
-/*                   LITERAIS, IDENTIFICADORES E VARIÁVEIS                    */
-/* ========================================================================== */
-%token ID
-%token LITERAL_INTEIRO  LITERAL_FLUTUANTE LITERAL_BOOLEANO
-%token LITERAL_CARACTER LITERAL_TEXTO
-
 
 %start programa
 
 %%
 
-programa	: cabecalho {} 
-			| subprogramas {}
-			| cabecalho subprogramas {}
+programa	: cabecalho subprogramas instrucoes {}
 			;
 
 cabecalho	: constantes tipoUsuario	{} 
 			; 
 
-constantes	: declaracaoConstante TERMINADOR				{} 
-			| declaracaoConstante TERMINADOR constantes		{} 
+constantes	: 											{}
+			| constantes declaracaoConstante TERMINADOR	{} 
 			; 
 
 declaracaoConstante	: CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao {}
 					;
 
-tipoUsuario	: novoTipoUsuario TERMINADOR 
-			| novoTipoUsuario TERMINADOR tipoUsuario{}
+tipoUsuario	: 											{}
+			| tipoUsuario novoTipoUsuario TERMINADOR 	{}
 			;
 
 novoTipoUsuario	: TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE ID {}
@@ -109,8 +100,8 @@ tipoUsuarioDeclaracoes	: declaracao TERMINADOR
 						| declaracao TERMINADOR tipoUsuarioDeclaracoes	{}
 						;
 
-subprogramas	: subprograma TERMINADOR 
-				| subprograma TERMINADOR subprogramas {}
+subprogramas	: 										{}
+				| subprogramas subprograma TERMINADOR 	{}
 				;
 
 subprograma		: funcao | procedimento {}
@@ -128,11 +119,13 @@ parametros		:
 				;
 
 instrucoes	: 
-			| instrucao TERMINADOR instrucoes 				{} 
+			| instrucao TERMINADOR instrucoes	{} 
 			;
 
-instrucao 	: declaracao	 								{} 
-			| atribuicao 									{} 
+instrucao 	: declaracao		{} 
+			| atribuicao 		{}
+			| condicionalSe		{}
+			| condicionalCaso	{}
 			;
 
 atribuicao 			: declaracao OPERADOR_ATRIBUICAO expressao 		{}
@@ -144,11 +137,28 @@ atribuicao 			: declaracao OPERADOR_ATRIBUICAO expressao 		{}
 declaracao 			: tipo ID	 									{} 
 					;
 
+condicionalSe		: SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE listaSenaoSe senaoOpcional {} 
+					;
+
+listaSenaoSe		: 																							{}
+    				| listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE 	{}
+    				;
+
+senaoOpcional		: 										{}
+    				| SENAO_TOK A_CHAVE instrucoes F_CHAVE	{}
+    				;
+
+condicionalCaso		: ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;
+
+listaCasos			: 																			{}
+					| listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes PARE_TOK TERMINADOR 	{} 
+
 expressao 			: LITERAL_INTEIRO 								{}
 					| LITERAL_FLUTUANTE 							{}
 					| LITERAL_CARACTER 								{}
 					| LITERAL_TEXTO 								{}
 					| LITERAL_BOOLEANO 								{} 
+					| ID											{}
 					;
 
 tipo 				: tipoEscalar

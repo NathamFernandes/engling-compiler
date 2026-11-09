@@ -1,0 +1,16 @@
+// Testes gerais de atribuição de declaração
+
+
+vetor<caracter> meuVetor123 = 10;
+
+inteiro meuInteiro = 10;
+inteiro meuInteiro = 10;
+
+caracter meuCaracter = 10;
+
+booleano meuBool = 10;
+
+meuBool++;
+meuBool--;
+
+teste = 10;
