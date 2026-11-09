@@ -33,7 +33,7 @@
 "pilha"                     { return TIPO_PILHA; }
 "deque"                     { return TIPO_DEQUE; }
 "hash"                      { return TIPO_HASH; }
-"conjunto"                  { return CONJUNTO; }
+"conjunto"                  { return TIPO_CONJUNTO; }
 "grafo"                     { return TIPO_GRAFO; }
 
 /* Literais booleanos */
