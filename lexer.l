@@ -51,10 +51,29 @@
 "pare"                      { return PARE_TOK; }
 "padrao"                    { return PADRAO_TOK; }
 
+/* Operadores Aritméticos */
 "++"                        { return OPERADOR_INCREMENTO; }
 "--"                        { return OPERADOR_DECREMENTO; }
+"+"                         { return OPERADOR_SOMA; }
+"-"                         { return OPERADOR_SUBTRACAO; }
+"*"                         { return OPERADOR_MULTIPLICACAO; }
+"/"                         { return OPERADOR_DIVISAO; }
+"%"                         { return OPERADOR_MODULO; }
+"^"                         { return OPERADOR_EXPONENCIACAO; }
+"#"                         { return OPERADOR_CERQUILHA; } /* Serve para retornar a quantidade de elementos de uma coleção */
 "="                         { return OPERADOR_ATRIBUICAO; }
 ";"                         { return TERMINADOR; }
+
+/* Delimitadores e pontuação */
+"("                         { return PARENTESE_ESQ; }
+")"                         { return PARENTESE_DIR; }
+"{"                         { return CHAVE_ESQ; }
+"}"                         { return CHAVE_DIR; }
+"["                         { return COLCHETE_ESQ; }
+"]"                         { return COLCHETE_DIR; }
+";"                         { return PONTO_VIRGULA; }
+":"                         { return DOIS_PONTOS; }
+","                         { return VIRGULA; }
 
 [0-9]+                      { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; }
 [a-zA-Z][a-zA-Z0-9_]*       { yylval.sValue = strdup(yytext); return ID; }
