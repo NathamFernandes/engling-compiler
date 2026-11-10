@@ -162,7 +162,7 @@ cremento			: variavel OPERADOR_INCREMENTO						{}
 					| variavel OPERADOR_DECREMENTO						{}
 					;
 
-declaracao 			: tipo ID	 									{} 
+declaracao 			: tipo ID										{} 
 					;
 
 condicionalSe		: SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE listaSenaoSe senaoOpcional {} 
@@ -242,8 +242,9 @@ expressaoExponencial
     ;
 
 expressaoUnaria
-    : expressaoPosfixa                              {}
-    | operadorUnario expressaoUnaria                {}
+    : expressaoPosfixa                                  {}
+    | operadorUnario expressaoUnaria                    {}
+    | A_PARENTESE tipoCast F_PARENTESE expressaoUnaria  {}
     ;
 
 operadorUnario
@@ -266,7 +267,6 @@ termo
     | LITERAL_CARACTER                              {}
     | LITERAL_TEXTO                                 {}
     | LITERAL_BOOLEANO                              {}
-    | A_PARENTESE tipo F_PARENTESE expressaoUnaria  {}
     | A_PARENTESE expressao F_PARENTESE             {}
     ;
 
@@ -290,8 +290,11 @@ listaExpressoes
     | listaExpressoes VIRGULA expressao             {}
     ;
 
-tipo                : tipoEscalar                   {}
-                    | tipoDimensional               {} 
+tipoCast            : tipoEscalar                   {}
+                    | tipoDimensional               {}
+                    ;
+
+tipo                : tipoCast                      {}
                     | ID                            {}
                     ;
 
@@ -310,6 +313,7 @@ tipoEscalar         : TIPO_INTEIRO                  {}
 
 tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR   {}
                     ;
+
 
 /* FIM DA PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 
