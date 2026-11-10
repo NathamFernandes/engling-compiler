@@ -11,7 +11,7 @@ tipo {
 
 tipo {
     inteiro z;
-    texto novo;
+    texto zxczx;
 } novoTipo;
 
 // Misturando funções e procedimentos

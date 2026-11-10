@@ -2,12 +2,12 @@
 
 tipo {
     inteiro z;
-    texto novo;
+    texto novoA;
 } novoTipo;
 
 tipo {
     inteiro z;
-    texto novo;
+    texto novoA;
 } novoTipo;
 
 teste oi;
