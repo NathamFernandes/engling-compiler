@@ -77,6 +77,7 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "}"                         { return F_CHAVE; }
 "["                         { return A_COLCHETE; }
 "]"                         { return F_COLCHETE; }
+"."                         { return PONTO; }
 
 {DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; } /* Reconhecimento de inteiros             */
 {DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLUTUANTE; }   /* Reconhecimento de pontos flutuantes    */

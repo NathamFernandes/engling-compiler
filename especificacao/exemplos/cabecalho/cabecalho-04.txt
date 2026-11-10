@@ -9,3 +9,8 @@ tipo {
     inteiro z;
     texto novo;
 } novoTipo;
+
+teste oi;
+novoTipo boo;
+
+boo.z = 10;

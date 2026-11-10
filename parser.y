@@ -64,7 +64,7 @@ extern char * yytext;
 /* ========================================================================== */
 /*                        DELIMITADORES E PONTUAÇÃO                           */
 /* ========================================================================== */
-%token VIRGULA      DOIS_PONTOS   TERMINADOR
+%token VIRGULA      DOIS_PONTOS   TERMINADOR	PONTO
 
 /* Escopo e Agrupamento */
 %token A_PARENTESE  F_PARENTESE
@@ -107,31 +107,54 @@ subprogramas	: 										{}
 subprograma		: funcao | procedimento {}
 				;
 
-funcao			: FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes RETORNE_TOK ID TERMINADOR F_CHAVE {}
+funcao			: FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
 				;
 
 procedimento	: PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
 				;
 
-parametros		: 
-				| tipo ID 
-				| tipo ID VIRGULA parametros {}
+parametros		:											{}
+				| tipo ID 									{}
+				| tipo ID VIRGULA parametros				{}
 				;
+
+parametrosChamada			:								{}
+							| ID							{}
+							| ID VIRGULA parametrosChamada	{}
+							;
 
 instrucoes	: 
 			| instrucao TERMINADOR instrucoes	{} 
 			;
 
-instrucao 	: declaracao		{} 
-			| atribuicao 		{}
-			| condicionalSe		{}
-			| condicionalCaso	{}
+instrucao 	: declaracao			{} 
+			| atribuicao 			{}
+			| condicionalSe			{}
+			| condicionalCaso		{}
+			| lacoPara				{}
+			| lacoEnquanto			{}
+			| chamadaSubprograma	{}
+			| controle				{}
+			| retorno				{}
 			;
 
-atribuicao 			: declaracao OPERADOR_ATRIBUICAO expressao 		{}
-					| ID OPERADOR_ATRIBUICAO expressao 				{}
-					| ID OPERADOR_INCREMENTO						{}
-					| ID OPERADOR_DECREMENTO 						{}
+atribuicao 			: atribuicaoComDeclaracao		{}
+					| atribuicaoSemDeclaracao		{}
+					;
+
+atribuicaoComDeclaracao	: declaracao OPERADOR_ATRIBUICAO expressao 	{}
+						;
+
+variavel		: ID				{}	
+				| variavel PONTO ID {}
+				;
+
+atribuicaoSemDeclaracao	: variavel OPERADOR_ATRIBUICAO expressao 			{}
+						| cremento											{}
+						;
+
+cremento			: variavel OPERADOR_INCREMENTO						{}
+					| variavel OPERADOR_DECREMENTO						{}
 					;
 
 declaracao 			: tipo ID	 									{} 
@@ -150,19 +173,42 @@ senaoOpcional		: 										{}
 
 condicionalCaso		: ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;
 
-listaCasos			: 																			{}
-					| listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes PARE_TOK TERMINADOR 	{} 
+listaCasos			: 														{}
+					| listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes	{} 
+					;
+
+lacoPara			: PARA_TOK A_PARENTESE atribuicaoComDeclaracao TERMINADOR expressao TERMINADOR atribuicaoSemDeclaracao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+					;
+
+lacoEnquanto		: ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+					;
+
+chamadaSubprograma	: ID A_PARENTESE parametrosChamada F_PARENTESE {}
+					;
+
+controle			: PARE_TOK 		{} 
+					| CONTINUE_TOK	{}
+					;
+
+retorno				: RETORNE_TOK ID {}
+					;
 
 expressao 			: LITERAL_INTEIRO 								{}
 					| LITERAL_FLUTUANTE 							{}
 					| LITERAL_CARACTER 								{}
 					| LITERAL_TEXTO 								{}
 					| LITERAL_BOOLEANO 								{} 
-					| ID											{}
+					| ID sufixoId									{}
+					| chamadaSubprograma							{}
+					;
+
+sufixoId			: 
+					| sufixoId A_COLCHETE expressao F_COLCHETE 		{}
 					;
 
 tipo 				: tipoEscalar
 					| tipoDimensional								{} 
+					| ID											{}
 					;
 
 tipoEscalar 		: TIPO_INTEIRO  								{}

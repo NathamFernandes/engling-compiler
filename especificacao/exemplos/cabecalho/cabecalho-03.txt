@@ -5,3 +5,5 @@ tipo {
     inteiro y;
     caracter z;
 } meuTipo;
+
+meuTipo oi;

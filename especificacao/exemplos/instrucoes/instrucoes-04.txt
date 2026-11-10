@@ -1,0 +1,19 @@
+funcao inteiro minhaFuncao1 () {
+    retorne x;
+};
+
+procedimento meuProdecimento1 () {
+    inteiro x;
+    x = minhaFuncao1();
+};
+
+minhaFuncao1();
+meuProdecimento1();
+
+///////////
+
+inteiro minhaEntrada;
+
+entrada(minhaEntrada); 
+
+saida(minhaEntrada); // resultado esperado: 10

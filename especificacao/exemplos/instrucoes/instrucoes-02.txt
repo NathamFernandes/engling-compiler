@@ -1,6 +1,6 @@
 // Teste de condicional 
 
-se (meuInt) {
+se (meuInt[2]) {
     inteiro x = 10;
 
     x++;
@@ -16,3 +16,13 @@ se (meuInt) {
 };
 
 // Teste de switch-case
+
+escolha (expressao) {
+    caso 1:
+        inteiro meuInteiro;
+        pare;
+    caso 2:
+        inteiro meuInteiroX;
+    padrao:
+        inteiro z;
+};

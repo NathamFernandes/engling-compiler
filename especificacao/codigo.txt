@@ -4,21 +4,21 @@ de mais de uma linha */
 
 // Implementação MergeSort
 
-funcao Vetor inteiro mergeSort(Vetor inteiro lista_inicial, inteiro inicio, inteiro final) 
+funcao Vetor<inteiro> mergeSort(Vetor<inteiro> lista_inicial, inteiro inicio, inteiro final) 
 {
 	se (inicio >= final) {
 		retorne lista_inicial;
-	}
+	};
 
 	inteiro meio = (inicio + final) / 2;
 
 	/* A atribuição de vetores é feita diretamente com o operador de igualdade "=".
 	Vetores, na linguagem, devem ser declarados com alguma incialização. */
-	Vetor inteiro lista_a = mergeSort(lista_inicial, inicio, meio);
+	Vetor<inteiro> lista_a = mergeSort(lista_inicial, inicio, meio);
 	Vetor inteiro lista_b = mergeSort(lista_inicial, meio, final);
 
 	retorne merge(lista_a, lista_b);
-}
+};
 
 Vetor inteiro merge(Vetor inteiro lista_a, Vetor inteiro lista_b) {
 // Operador "#" é usado para tamanho |a|

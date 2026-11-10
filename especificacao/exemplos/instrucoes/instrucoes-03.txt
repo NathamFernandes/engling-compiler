@@ -1,0 +1,17 @@
+// Teste para laços de repetição
+
+para (inteiro x = 0; 10; i++) {
+    x = x1;
+
+    se (1) {
+        pare;
+    };
+};
+
+enquanto (10) {
+    x = x1;
+
+    se (2) {
+        pare;
+    };
+};
