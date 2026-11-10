@@ -1,0 +1,43 @@
+// ==========================================================
+// EXEMPLO PRÁTICO DA LINGUAGEM
+// ==========================================================
+
+// 1. CABEÇALHO: Declaração de Constantes e Tipos de Dados
+constante inteiro MAIORIDADE = 18;
+constante inteiro NOTA_MINIMA = 7;
+
+tipo {
+    texto nome;
+    inteiro idade;
+    flutuante nota;
+    booleano aprovado;
+} Aluno;
+
+// 2. INSTRUÇÕES GLOBAIS
+Aluno estudante;
+inteiro contador;
+
+// Atribuições iniciais
+estudante.nome = "Maria Silva";
+estudante.idade = 17;
+estudante.nota = 8.5;
+estudante.aprovado = Falso;
+
+// Estrutura de repetição: simulando passagem de tempo
+enquanto (estudante.idade < MAIORIDADE) {
+    estudante.idade++;
+}
+
+// Estrutura condicional dupla
+se (estudante.idade >= MAIORIDADE) {
+    
+    // Aninhando outro condicional lógico
+    se (estudante.nota >= NOTA_MINIMA) {
+        estudante.aprovado = Verdadeiro;
+    } senao {
+        estudante.aprovado = Falso;
+    }
+
+} senao {
+    estudante.aprovado = Falso;
+}

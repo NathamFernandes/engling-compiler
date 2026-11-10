@@ -54,6 +54,13 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "continue"                  { return CONTINUE_TOK; }
 "padrao"                    { return PADRAO_TOK; }
 
+"{"                         { return A_CHAVE; }
+"}"                         { return F_CHAVE; }
+"("                         { return A_PARENTESE; }
+")"                         { return F_PARENTESE; }
+"["                         { return A_COLCHETE; }
+"]"                         { return F_COLCHETE; }
+
 "++"                        { return OPERADOR_INCREMENTO; }
 "--"                        { return OPERADOR_DECREMENTO; }
 "+"                         { return OPERADOR_SOMA; }
@@ -80,11 +87,12 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 ","                         { return VIRGULA; }
 ":"                         { return DOIS_PONTOS; }
 ";"                         { return TERMINADOR; }
+"."                         { return PONTO; }
 
 {DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; } /* Reconhecimento de inteiros             */
 {DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLUTUANTE; }   /* Reconhecimento de pontos flutuantes    */
 \'([^\']\\.)\'              { yylval.cValue = yytext[1]; return LITERAL_CARACTER; }       /* Reconhecimento de caracter             */
-\"([^\"\\]\\.)*\"           { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; } /* Reconhecimento de strings              */
+\"([^\"\\]|\\.)*\"           { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; } /* Reconhecimento de strings              */
 {ID}                        { yylval.sValue = strdup(yytext); return ID; }            /* Reconhecimento de variável             */
 
 .                           { yyerror("Caracter inválido"); }                         /* Tratamento de erro léxico              */
