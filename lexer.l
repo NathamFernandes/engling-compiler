@@ -82,14 +82,6 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 ">="                        { return OPERADOR_MAIOR_IGUAL; }
 "="                         { return OPERADOR_ATRIBUICAO; }
 
-"("                         { return A_PARENTESE; }
-")"                         { return F_PARENTESE; }
-"{"                         { return A_CHAVE; }
-"}"                         { return F_CHAVE; }
-"["                         { return A_COLCHETE; }
-"]"                         { return F_COLCHETE; }
-"."                         { return PONTO; }
-
 "<"                         { return MENOR; }
 ">"                         { return MAIOR; }
 
