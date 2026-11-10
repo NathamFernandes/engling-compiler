@@ -7,7 +7,8 @@
     extern int yyerror (char *msg);
 %}
 
-/* Macros/Defines/Variáveis do lex ???? */
+%option noyywrap
+%option yylineno
 
 DIGITO      [0-9]
 CARACTER    [a-zA-Z_]
@@ -17,7 +18,7 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 
 "//".*                      ;
 "/*"([^*]|\*+[^*/])*\*+"/"  ;
-[ \t\r\n]                   ;
+[ \t\r\n]+                  ;
 
 "tipo"                      { return TIPO; }
 "constante"                 { return CONSTANTE; }
@@ -89,16 +90,12 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 ":"                         { return DOIS_PONTOS; }
 ";"                         { return TERMINADOR; }
 
-{DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; } /* Reconhecimento de inteiros             */
-{DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLUTUANTE; }   /* Reconhecimento de pontos flutuantes    */
-\'([^\']\\.)\'              { yylval.cValue = yytext[1]; return LITERAL_CARACTER; }       /* Reconhecimento de caracter             */
-\"([^\"\\]\\.)*\"           { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; } /* Reconhecimento de strings              */
-{ID}                        { yylval.sValue = strdup(yytext); return ID; }            /* Reconhecimento de variável             */
+{DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; }
+{DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLUTUANTE; }
+\'([^'\\\n]|\\.)\'          { yylval.cValue = (yytext[1] == '\\' ? yytext[2] : yytext[1]); return LITERAL_CARACTER; }
+\"([^"\\\n]|\\.)*\"         { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; }
+{ID}                        { yylval.sValue = strdup(yytext); return ID; }
 
-.                           { yyerror("Caracter inválido"); }                         /* Tratamento de erro léxico              */
+.                           { yyerror("Caracter inválido"); }
 
 %%
-
-#ifndef yywrap
-    int yywrap(void) { return 1; }
-#endif

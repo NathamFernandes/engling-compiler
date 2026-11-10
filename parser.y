@@ -124,8 +124,8 @@ parametros		:											{}
 				;
 
 parametrosChamada			:								{}
-							| ID							{}
-							| ID VIRGULA parametrosChamada	{}
+							| expressao							{}
+							| expressao VIRGULA parametrosChamada	{}
 							;
 
 instrucoes	: 
