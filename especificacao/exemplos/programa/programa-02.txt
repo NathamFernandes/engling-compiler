@@ -1,0 +1,58 @@
+// Esse é um comentário de uma linha
+/* Esse é um comentário
+de mais de uma linha */
+
+// Implementação MergeSort
+
+funcao vetor<inteiro> mergeSort(vetor<inteiro> lista_inicial, inteiro inicio, inteiro final) 
+{
+	se (inicio >= final) {
+		retorne lista_inicial;
+	};
+
+	inteiro meio = (inicio + final) / 2;
+
+	/* A atribuição de vetores é feita diretamente com o operador de igualdade "=".
+	Vetores, na linguagem, devem ser declarados com alguma incialização. */
+	vetor<inteiro> lista_a = mergeSort(lista_inicial, inicio, meio);
+	vetor<inteiro> lista_b = mergeSort(lista_inicial, meio, final);
+
+	retorne merge(lista_a, lista_b);
+};
+
+funcao vetor<inteiro> merge(vetor<inteiro> lista_a, vetor<inteiro> lista_b) {
+	// Operador "#" é usado para tamanho |a|
+	inteiro tamanho_lista = #lista_a + #lista_b;
+	inteiro iterador_a = 0;  
+	inteiro iterador_b = 0;
+	inteiro iterador_auxiliar = 0; 
+ 	
+	// Vetor alocado dinamicamente com o tamanho específico informado. 
+ 	vetor<inteiro> lista_auxiliar = novo vetor<inteiro>(tamanho_lista);
+
+	enquanto (iterador_a < #lista_a && iterador_b < #lista_b) {
+		se (lista_a[iterador_a] < lista_b[iterador_b]) {
+			lista_auxiliar[iterador_auxiliar] = lista_a[iterador_a];
+			iterador_a++;
+		} senao {
+			lista_auxiliar[iterador_auxiliar] = lista_b[iterador_b];
+			iterador_b++;
+		};
+		
+		iterador_auxiliar++;
+	};
+
+	enquanto (iterador_a < #lista_a) {
+		lista_auxiliar[iterador_auxiliar] = lista_a[iterador_a];
+		iteador_auxiliar++;
+		iterador_a++;
+	};
+
+	enquanto (iterador_b < #lista_b) {
+		lista_auxiliar[iterador_auxiliar] = lista_b[iterador_b];
+		iteador_auxiliar++;
+		iterador_b++;
+	};
+		
+	retorne lista_auxiliar;
+};

@@ -24,7 +24,7 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "funcao"                    { return FUNCAO; }
 "procedimento"              { return PROCEDIMENTO; }
 "retorne"                   { return RETORNE_TOK; }
-
+"novo"                      { return NOVO; }
 "inteiro"                   { return TIPO_INTEIRO; }
 "caracter"                  { return TIPO_CARACTER; }
 "flutuante"                 { return TIPO_FLUTUANTE; }
@@ -73,6 +73,14 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "<="                        { return OPERADOR_MENOR_IGUAL; }
 ">="                        { return OPERADOR_MAIOR_IGUAL; }
 "="                         { return OPERADOR_ATRIBUICAO; }
+
+"("                         { return A_PARENTESE; }
+")"                         { return F_PARENTESE; }
+"{"                         { return A_CHAVE; }
+"}"                         { return F_CHAVE; }
+"["                         { return A_COLCHETE; }
+"]"                         { return F_COLCHETE; }
+"."                         { return PONTO; }
 
 "<"                         { return MENOR; }
 ">"                         { return MAIOR; }

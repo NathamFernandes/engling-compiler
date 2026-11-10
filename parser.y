@@ -27,7 +27,7 @@ extern char * yytext;
 /*                         ESTRUTURAS E DECLARAÇÕES                           */
 /* ========================================================================== */
 %token TIPO         CONSTANTE     FUNCAO
-%token PROCEDIMENTO RETORNE_TOK
+%token PROCEDIMENTO RETORNE_TOK	NOVO
 
 /* ========================================================================== */
 /*                               TIPOS DE DADOS                               */
@@ -150,9 +150,11 @@ atribuicao 			: atribuicaoComDeclaracao		{}
 atribuicaoComDeclaracao	: declaracao OPERADOR_ATRIBUICAO expressao 	{}
 						;
 
-variavel		: ID				{}	
-				| variavel PONTO ID {}
-				;
+variavel
+    : ID                                            {}  
+    | variavel PONTO ID                             {}
+    | variavel A_COLCHETE expressao F_COLCHETE      {}
+    ;
 
 atribuicaoSemDeclaracao	: variavel OPERADOR_ATRIBUICAO expressao 			{}
 						| cremento											{}
@@ -195,7 +197,7 @@ controle			: PARE_TOK 		{}
 					| CONTINUE_TOK	{}
 					;
 
-retorno				: RETORNE_TOK ID {}
+retorno				: RETORNE_TOK expressao {}
 					;
 
 /* PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
@@ -268,6 +270,7 @@ termo
     | LITERAL_TEXTO                                 {}
     | LITERAL_BOOLEANO                              {}
     | A_PARENTESE expressao F_PARENTESE             {}
+	| NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
     ;
 
 sufixoId
