@@ -63,21 +63,23 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "%"                         { return OPERADOR_MODULO; }
 "^"                         { return OPERADOR_EXPONENCIACAO; }
 "#"                         { return OPERADOR_TAMANHO; }
+
+"||"                        { return OPERADOR_OU; }
+"&&"                        { return OPERADOR_E; }
+"!"                         { return OPERADOR_NEGACAO; }
+
+"=="                        { return OPERADOR_IGUAL; }
+"!="                        { return OPERADOR_DIFERENTE; }
+"<="                        { return OPERADOR_MENOR_IGUAL; }
+">="                        { return OPERADOR_MAIOR_IGUAL; }
 "="                         { return OPERADOR_ATRIBUICAO; }
-","                         { return VIRGULA; }
-":"                         { return DOIS_PONTOS; }
-";"                         { return TERMINADOR; }
 
 "<"                         { return MENOR; }
 ">"                         { return MAIOR; }
 
-"("                         { return A_PARENTESE; }
-")"                         { return F_PARENTESE; }
-"{"                         { return A_CHAVE; }
-"}"                         { return F_CHAVE; }
-"["                         { return A_COLCHETE; }
-"]"                         { return F_COLCHETE; }
-"."                         { return PONTO; }
+","                         { return VIRGULA; }
+":"                         { return DOIS_PONTOS; }
+";"                         { return TERMINADOR; }
 
 {DIGITO}+                   { yylval.iValue = atoi(yytext); return LITERAL_INTEIRO; } /* Reconhecimento de inteiros             */
 {DIGITO}+"."{DIGITO}+       { yylval.fValue = atof(yytext); return LITERAL_FLUTUANTE; }   /* Reconhecimento de pontos flutuantes    */

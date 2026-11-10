@@ -1,49 +1,4 @@
-// enum tokens {
-//     TOKEN_EOF = 0,
-//     TIPO_CHAVE = 258, ID, CONST, FUNCAO, PROCEDIMENTO, SE, SENAO_SE, PARA, FACA,
-//     ENQUANTO, ESCOLHA, CASO, PARE, PADRAO, RETORNE, NOVO, VERDADEIRO, FALSO,
-//     TIPO_ESCALAR, VETOR_ABRE, VETOR_FECHA,
-//     LITERAL_INT, LITERAL_FLOAT, LITERAL_CHAR, LITERAL_TEXTO,
-//     OP_ATRIBUICAO, OP_INCREMENTO, OP_DECREMENTO, OP_IGUAL, OP_DIFERENTE,
-//     OP_MENOR, OP_MENOR_IGUAL, OP_MAIOR, OP_MAIOR_IGUAL,
-//     OP_SOMA, OP_SUB, OP_MULT, OP_DIV, OP_MOD, OP_EXP, OP_COMPRIMENTO,
-//     LOGICO_OU, LOGICO_E, LOGICO_NEG,
-//     ABRE_CHAVE, FECHA_CHAVE, ABRE_PAR, FECHA_PAR, ABRE_COLCHETE, FECHA_COLCHETE,
-//     PONTO_E_VIRGULA, DOIS_PONTOS, VIRGULA, SOBRECARGA
-// };
-
-// int linha_atual = 1;
-
-/* %option noyywrap */
-
-/* Definições de Expressões Regulares Baseadas na Gramática 
-/* DIGITO              [0-9]
-/* LETRA               [a-zA-Z_]
-/* ALFANUM             [a-zA-Z0-9_]
-/* ESPACOS             [ \t\r]+
-
-
-// {ESPACOS}           ;
-// "\n"                { linha_atual++; }
-// "para"                      { return PARA; }
-
-
- /* Palavras-Reservadas de Estruturas e Fluxo 
-"tipo"              { return TIPO_CHAVE; }
 "sobrecarga"        { return SOBRECARGA; }
-"const"             { return CONST; }
-"funcao"            { return FUNCAO; }
-"procedimento"      { return PROCEDIMENTO; }
-"se"                { return SE; }
-"senao se"          { return SENAO_SE; }
-"para"              { return PARA; }
-"faca"              { return FACA; }
-"enquanto"          { return ENQUANTO; }
-"escolha"           { return ESCOLHA; }
-"caso"              { return CASO; }
-"pare"              { return PARE; }
-"padrao"            { return PADRAO; }
-"retorne"           { return RETORNE; }
 "novo"              { return NOVO; }
 
  /* Literais Booleanos
@@ -51,10 +6,6 @@
 "Falso"             { return FALSO; }
 
  /* Tipos Escalares Suportados pela Linguagem
-
-
- /* Tipo Dimensional (Vetor < tipo >) - Casando o início da estrutura
-"Vetor"             { return VETOR_ABRE; }
 
  /* Operadores de Incremento, Decremento e Lógicos
 "||"                { return LOGICO_OU; }

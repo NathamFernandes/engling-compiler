@@ -58,13 +58,18 @@ extern char * yytext;
 %token OPERADOR_MODULO        OPERADOR_EXPONENCIACAO
 %token OPERADOR_TAMANHO
 
-/* Atribuição e Relacionais */
-%token OPERADOR_ATRIBUICAO    MENOR         MAIOR
+/* Lógicos */
+%token OPERADOR_OU            OPERADOR_E                  OPERADOR_NEGACAO
+
+/* Relacionais e Atribuição */
+%token OPERADOR_ATRIBUICAO    MENOR                       MAIOR
+%token OPERADOR_IGUAL         OPERADOR_DIFERENTE
+%token OPERADOR_MENOR_IGUAL   OPERADOR_MAIOR_IGUAL
 
 /* ========================================================================== */
 /*                        DELIMITADORES E PONTUAÇÃO                           */
 /* ========================================================================== */
-%token VIRGULA      DOIS_PONTOS   TERMINADOR	PONTO
+%token VIRGULA      DOIS_PONTOS   TERMINADOR    PONTO
 
 /* Escopo e Agrupamento */
 %token A_PARENTESE  F_PARENTESE
@@ -193,34 +198,120 @@ controle			: PARE_TOK 		{}
 retorno				: RETORNE_TOK ID {}
 					;
 
-expressao 			: LITERAL_INTEIRO 								{}
-					| LITERAL_FLUTUANTE 							{}
-					| LITERAL_CARACTER 								{}
-					| LITERAL_TEXTO 								{}
-					| LITERAL_BOOLEANO 								{} 
-					| ID sufixoId									{}
-					| chamadaSubprograma							{}
-					;
+/* PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 
-sufixoId			: 
-					| sufixoId A_COLCHETE expressao F_COLCHETE 		{}
-					;
+expressao 	: expressaoLogicaE                            {}
+    | expressao OPERADOR_OU expressaoLogicaE        	{}
+    ;
+	
+expressaoLogicaE
+    : expressaoRelacional                           {}
+    | expressaoLogicaE OPERADOR_E expressaoRelacional {}
+    ;
 
-tipo 				: tipoEscalar
-					| tipoDimensional								{} 
-					| ID											{}
-					;
+expressaoRelacional
+    : expressaoAditiva                              {}
+    | expressaoAditiva operadorRelacional expressaoAditiva {}
+    ;
 
-tipoEscalar 		: TIPO_INTEIRO  								{}
-					| TIPO_CARACTER  								{}
-					| TIPO_FLUTUANTE  								{}
-					| TIPO_DECIMAL  								{}
-					| TIPO_TEXTO  									{}
-					| TIPO_BOOLEANO 								{} 
-					;
+operadorRelacional
+    : OPERADOR_IGUAL                                {}
+    | OPERADOR_DIFERENTE                            {}
+    | MENOR                                         {}
+    | OPERADOR_MENOR_IGUAL                          {}
+    | MAIOR                                         {}
+    | OPERADOR_MAIOR_IGUAL                          {}
+    ;
 
-tipoDimensional		: TIPO_VETOR MENOR tipo MAIOR					{}
-					;
+expressaoAditiva
+    : expressaoMultiplicativa                       {}
+    | expressaoAditiva OPERADOR_SOMA expressaoMultiplicativa      {}
+    | expressaoAditiva OPERADOR_SUBTRACAO expressaoMultiplicativa {}
+    ;
+
+expressaoMultiplicativa
+    : expressaoExponencial                          {}
+    | expressaoMultiplicativa OPERADOR_MULTIPLICACAO expressaoExponencial {}
+    | expressaoMultiplicativa OPERADOR_DIVISAO expressaoExponencial       {}
+    | expressaoMultiplicativa OPERADOR_MODULO expressaoExponencial        {}
+    ;
+
+expressaoExponencial
+    : expressaoUnaria                               {}
+    | expressaoUnaria OPERADOR_EXPONENCIACAO expressaoExponencial {}
+    ;
+
+expressaoUnaria
+    : expressaoPosfixa                              {}
+    | operadorUnario expressaoUnaria                {}
+    ;
+
+operadorUnario
+    : OPERADOR_SUBTRACAO                            {}
+    | OPERADOR_NEGACAO                              {}
+    | OPERADOR_TAMANHO                              {}
+    ;
+
+expressaoPosfixa
+    : termo                                         {}
+    | termo OPERADOR_INCREMENTO                     {}
+    | termo OPERADOR_DECREMENTO                     {}
+    ;
+
+termo
+    : ID                                            {}
+    | ID sufixoId                                   {}
+    | LITERAL_INTEIRO                               {}
+    | LITERAL_FLUTUANTE                             {}
+    | LITERAL_CARACTER                              {}
+    | LITERAL_TEXTO                                 {}
+    | LITERAL_BOOLEANO                              {}
+    | A_PARENTESE tipo F_PARENTESE expressaoUnaria  {}
+    | A_PARENTESE expressao F_PARENTESE             {}
+    ;
+
+sufixoId
+    : listaIndexacao                                {}
+    | A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
+    ;
+
+listaIndexacao
+    : A_COLCHETE expressao F_COLCHETE               {}
+    | listaIndexacao A_COLCHETE expressao F_COLCHETE {}
+    ;
+
+listaExpressoesOpcional
+    :                                               {}
+    | listaExpressoes                               {}
+    ;
+
+listaExpressoes
+    : expressao                                     {}
+    | listaExpressoes VIRGULA expressao             {}
+    ;
+
+tipo                : tipoEscalar                   {}
+                    | tipoDimensional               {} 
+                    | ID                            {}
+                    ;
+
+tipoEscalar         : TIPO_INTEIRO                  {}
+                    | TIPO_CARACTER                 {}
+                    | TIPO_FLUTUANTE                {}
+                    | TIPO_DECIMAL                  {}
+                    | TIPO_TEXTO                    {}
+                    | TIPO_BOOLEANO                 {} 
+                    | TIPO_FILA                     {}
+                    | TIPO_PILHA                    {}
+                    | TIPO_DEQUE                    {}
+                    | TIPO_CONJUNTO                 {}
+                    | TIPO_GRAFO                    {}
+                    ;
+
+tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR   {}
+                    ;
+
+/* FIM DA PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 
 %%
 
