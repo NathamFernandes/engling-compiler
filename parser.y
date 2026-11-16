@@ -44,7 +44,7 @@ extern char * yytext;
 /*                            CONTROLE DE FLUXO                               */
 /* ========================================================================== */
 %token SE_TOK       SENAO_TOK     SENAO_SE_TOK
-%token PARA_TOK     FACA_TOK      ENQUANTO_TOK
+%token PARA_TOK     ENQUANTO_TOK
 %token ESCOLHA_TOK  CASO_TOK      PARE_TOK
 %token CONTINUE_TOK PADRAO_TOK
 
@@ -81,7 +81,7 @@ extern char * yytext;
 
 %%
 
-programa	: cabecalho subprogramas instrucoes {}
+programa	: cabecalho subprogramas instrucoes { }
 			;
 
 cabecalho	: constantes tipoUsuario	{} 
@@ -91,7 +91,7 @@ constantes	: 											{}
 			| constantes declaracaoConstante TERMINADOR	{} 
 			; 
 
-declaracaoConstante	: CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao {}
+declaracaoConstante	: CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { printf("%s", $3); }
 					;
 
 tipoUsuario	: 											{}

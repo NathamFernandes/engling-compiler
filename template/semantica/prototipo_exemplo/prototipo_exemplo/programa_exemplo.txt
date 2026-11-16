@@ -1,0 +1,11 @@
+float g;
+
+funcao soma(int a, b): int
+inicio
+  return a+b;
+fim
+
+inicio
+  int resultado;
+  resultado <- soma(g,15)
+fim

@@ -1,3 +1,5 @@
 // Apenas uma constante
 
 constante inteiro meuInteiro = 10;
+
+novaVariavel = 20;

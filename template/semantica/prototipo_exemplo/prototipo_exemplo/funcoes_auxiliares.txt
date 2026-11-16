@@ -1,0 +1,7 @@
+Pilha para controle de escopos:
+  Operações básicas: push, pop, top
+  Exemplo: (subprograma, tipo) <- top(k) // pilha contém níveis de 1 a k (topo)
+
+Tabela de símbolos (hash table):
+  insert(chave, simbolo)
+  simbolo <- lookup(chave) // chave = subprograma ++ nome

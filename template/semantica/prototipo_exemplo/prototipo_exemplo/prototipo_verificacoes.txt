@@ -1,0 +1,53 @@
+<programa> -> { push(global); } <decls> <subprogramas> INICIO <stmts> FIM { pop(); }
+
+<subprogramas> -> <sub> | <sub> <subprogramas>
+
+<sub> -> FUNCAO ID LEFTPAR {push($2);} <decls> RIGHTPAR COL TYPE 
+               INICIO  <stmts> FIM {pop();} 
+
+<stm> -> <return> | <decls> | <assign>
+
+<return> -> RETURN <exp>  { 
+                           (sub, tiposubprograma) <- top(k) 
+                           (textosubexp1, tipo1) <- $2
+                            se compativel(tiposubprograma, tipo1) entao
+                              gere codigo c simplificado
+                            senao
+                              erro "tipos incompatíveis"
+                          }
+
+<decls> -> <decl> | <decl> SCOL <decls>
+
+<decl> -> TYPE <idlist> {}
+
+<idlist> -> <id> {       }
+
+
+<assign> -> ID ARROW <exp>
+
+<exp> -> <exp> <op> <exp>
+               { (textosubexp1, tipo1) <- $1
+                 (textosubexp2, tipo2) <- $3
+                 (bool_value, tipo_resultante) <- compativel(tipo1, tipo2)
+                  se  bool_value
+                    $$ <- (textosubexp1 ++ $2 ++ textosubexp2, 
+                          tipo_resultante)
+                  senao
+                    error <- "tipo incompativel"
+                  fimse
+                }
+          | ID { n <- k
+                 bool pare <- false
+                 faça
+                    (sub, tiposub) <- top(n)      
+                    (nome, tipovar) <- lookup(sub++$1)
+                    se (nome, tipovar) nao encontrado
+                      se n > 1 entao
+                         n--;
+                      senao
+                         error "variavel nao declarada"
+                      fimse
+                    senao
+                       pare <- true
+                 enquanto nao pare;
+                  $$ <- ($1, tipovar)
