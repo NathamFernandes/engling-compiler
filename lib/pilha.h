@@ -1,5 +1,5 @@
-#ifndef PILHA
-#define PILHA
+#ifndef PILHA_H
+#define PILHA_H
 
 typedef struct no {
     char *escopo; 
@@ -7,11 +7,11 @@ typedef struct no {
 } no;
 
 typedef struct pilha {
-    no topo;
+    no *topo;
 } pilha;
 
-pilha *criar_pilha();
-void push(pilha *p, char *escopo);
+pilha *criar_pilha(void);
+void push(pilha *p, const char *escopo);
 void pop(pilha *p);
 char *escopo_atual(pilha *p);
 void liberar_pilha(pilha *p);

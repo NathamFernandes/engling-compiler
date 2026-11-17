@@ -47,7 +47,6 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "senao"                     { return SENAO_TOK; }
 "senaose"                   { return SENAO_SE_TOK; }
 "para"                      { return PARA_TOK; }
-"faca"                      { return FACA_TOK; }
 "enquanto"                  { return ENQUANTO_TOK; }
 "escolha"                   { return ESCOLHA_TOK; }
 "caso"                      { return CASO_TOK; }

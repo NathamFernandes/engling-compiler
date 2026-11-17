@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "pilha.h"
+#include "hash_table.h"
+
+pilha *pilha_escopos;
+HashTable *ht;
+
 int yylex(void);
 int yyerror(char *s);
 extern int yylineno;
@@ -11,23 +17,24 @@ extern char * yytext;
 %}
 
 %union {
-	int 	iValue;
-	char * 	sValue;
-	char	cValue;
-	float	fValue;
-	};
+    int     iValue;
+    char *  sValue;
+    char    cValue;
+    float   fValue;
+};
 
 %token <sValue> ID LITERAL_TEXTO
 %token <iValue> LITERAL_INTEIRO LITERAL_BOOLEANO
 %token <cValue> LITERAL_CARACTER
 %token <fValue> LITERAL_FLUTUANTE
+%type <sValue> tipo tipoCast tipoEscalar
 
 
 /* ========================================================================== */
 /*                         ESTRUTURAS E DECLARAÇÕES                           */
 /* ========================================================================== */
 %token TIPO         CONSTANTE     FUNCAO
-%token PROCEDIMENTO RETORNE_TOK	NOVO
+%token PROCEDIMENTO RETORNE_TOK NOVO
 
 /* ========================================================================== */
 /*                               TIPOS DE DADOS                               */
@@ -81,74 +88,82 @@ extern char * yytext;
 
 %%
 
-programa	: cabecalho subprogramas instrucoes { }
-			;
+programa    : cabecalho subprogramas instrucoes { }
+            ;
 
-cabecalho	: constantes tipoUsuario	{} 
-			; 
+cabecalho   : constantes tipoUsuario    {} 
+            ; 
 
-constantes	: 											{}
-			| constantes declaracaoConstante TERMINADOR	{} 
-			; 
+constantes  :                                           {}
+            | constantes declaracaoConstante TERMINADOR {} 
+            ; 
 
-declaracaoConstante	: CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { printf("%s", $3); }
-					;
+declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { 
+                        if ($2 != NULL && strcmp($2, "inteiro") == 0) {
+                            if (!inserir_linha(ht, pilha_escopos, $3, $2, CAT_CONSTANTE, yylineno)) {
+                                fprintf(stderr, "Erro semantico (linha %d): constante '%s' ja declarada.\n", yylineno, $3);
+                            } else {
+                                printf("Constante inteira '%s' inserida com sucesso!\n", $3);
+                            }
+                        }
+                    }
+                    ;
 
-tipoUsuario	: 											{}
-			| tipoUsuario novoTipoUsuario TERMINADOR 	{}
-			;
+tipoUsuario :                                           {}
+            | tipoUsuario novoTipoUsuario TERMINADOR    {}
+            ;
 
-novoTipoUsuario	: TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE ID {}
-				;
+novoTipoUsuario : TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE ID {}
+                ;
 
-tipoUsuarioDeclaracoes	: declaracao TERMINADOR 
-						| declaracao TERMINADOR tipoUsuarioDeclaracoes	{}
-						;
+tipoUsuarioDeclaracoes  : declaracao TERMINADOR 
+                        | declaracao TERMINADOR tipoUsuarioDeclaracoes  {}
+                        ;
 
-subprogramas	: 										{}
-				| subprogramas subprograma TERMINADOR 	{}
-				;
+subprogramas    :                                       {}
+                | subprogramas subprograma TERMINADOR   {}
+                ;
 
-subprograma		: funcao | procedimento {}
-				;
+subprograma     : funcao | procedimento {}
+                ;
 
-funcao			: FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
-				;
+funcao          : FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+                ;
 
-procedimento	: PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
-				;
+procedimento    : PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+                ;
 
-parametros		:											{}
-				| tipo ID 									{}
-				| tipo ID VIRGULA parametros				{}
-				;
+parametros      :                                           {}
+                | tipo ID                                   {}
+                | tipo ID VIRGULA parametros                {}
+                ;
 
-parametrosChamada			:								{}
-							| expressao							{}
-							| expressao VIRGULA parametrosChamada	{}
-							;
+parametrosChamada           :                               {}
+                            | expressao                         {}
+                            | expressao VIRGULA parametrosChamada   {}
+                            ;
 
-instrucoes	: 
-			| instrucao TERMINADOR instrucoes	{} 
-			;
+instrucoes  : 
+            | instrucao TERMINADOR instrucoes   {} 
+            ;
 
-instrucao 	: declaracao			{} 
-			| atribuicao 			{}
-			| condicionalSe			{}
-			| condicionalCaso		{}
-			| lacoPara				{}
-			| lacoEnquanto			{}
-			| chamadaSubprograma	{}
-			| controle				{}
-			| retorno				{}
-			;
+instrucao   : declaracao            {} 
+            | atribuicao            {}
+            | condicionalSe         {}
+            | condicionalCaso       {}
+            | lacoPara              {}
+            | lacoEnquanto          {}
+            | chamadaSubprograma    {}
+            | controle              {}
+            | retorno               {}
+            ;
 
-atribuicao 			: atribuicaoComDeclaracao		{}
-					| atribuicaoSemDeclaracao		{}
-					;
+atribuicao          : atribuicaoComDeclaracao       {}
+                    | atribuicaoSemDeclaracao       {}
+                    ;
 
-atribuicaoComDeclaracao	: declaracao OPERADOR_ATRIBUICAO expressao 	{}
-						;
+atribuicaoComDeclaracao : declaracao OPERADOR_ATRIBUICAO expressao  {}
+                        ;
 
 variavel
     : ID                                            {}  
@@ -156,56 +171,56 @@ variavel
     | variavel A_COLCHETE expressao F_COLCHETE      {}
     ;
 
-atribuicaoSemDeclaracao	: variavel OPERADOR_ATRIBUICAO expressao 			{}
-						| cremento											{}
-						;
+atribuicaoSemDeclaracao : variavel OPERADOR_ATRIBUICAO expressao            {}
+                        | cremento                                          {}
+                        ;
 
-cremento			: variavel OPERADOR_INCREMENTO						{}
-					| variavel OPERADOR_DECREMENTO						{}
-					;
+cremento            : variavel OPERADOR_INCREMENTO                      {}
+                    | variavel OPERADOR_DECREMENTO                      {}
+                    ;
 
-declaracao 			: tipo ID										{} 
-					;
+declaracao          : tipo ID                                       {} 
+                    ;
 
-condicionalSe		: SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE listaSenaoSe senaoOpcional {} 
-					;
+condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE listaSenaoSe senaoOpcional {} 
+                    ;
 
-listaSenaoSe		: 																							{}
-    				| listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE 	{}
-    				;
+listaSenaoSe        :                                                                                           {}
+                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE    {}
+                    ;
 
-senaoOpcional		: 										{}
-    				| SENAO_TOK A_CHAVE instrucoes F_CHAVE	{}
-    				;
+senaoOpcional       :                                       {}
+                    | SENAO_TOK A_CHAVE instrucoes F_CHAVE  {}
+                    ;
 
-condicionalCaso		: ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;
+condicionalCaso     : ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;
 
-listaCasos			: 														{}
-					| listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes	{} 
-					;
+listaCasos          :                                                       {}
+                    | listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes  {} 
+                    ;
 
-lacoPara			: PARA_TOK A_PARENTESE atribuicaoComDeclaracao TERMINADOR expressao TERMINADOR atribuicaoSemDeclaracao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
-					;
+lacoPara            : PARA_TOK A_PARENTESE atribuicaoComDeclaracao TERMINADOR expressao TERMINADOR atribuicaoSemDeclaracao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+                    ;
 
-lacoEnquanto		: ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
-					;
+lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+                    ;
 
-chamadaSubprograma	: ID A_PARENTESE parametrosChamada F_PARENTESE {}
-					;
+chamadaSubprograma  : ID A_PARENTESE parametrosChamada F_PARENTESE {}
+                    ;
 
-controle			: PARE_TOK 		{} 
-					| CONTINUE_TOK	{}
-					;
+controle            : PARE_TOK      {} 
+                    | CONTINUE_TOK  {}
+                    ;
 
-retorno				: RETORNE_TOK expressao {}
-					;
+retorno             : RETORNE_TOK expressao {}
+                    ;
 
 /* PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 
-expressao 	: expressaoLogicaE                            {}
-    | expressao OPERADOR_OU expressaoLogicaE        	{}
+expressao   : expressaoLogicaE                            {}
+    | expressao OPERADOR_OU expressaoLogicaE            {}
     ;
-	
+    
 expressaoLogicaE
     : expressaoRelacional                           {}
     | expressaoLogicaE OPERADOR_E expressaoRelacional {}
@@ -270,7 +285,7 @@ termo
     | LITERAL_TEXTO                                 {}
     | LITERAL_BOOLEANO                              {}
     | A_PARENTESE expressao F_PARENTESE             {}
-	| NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
+    | NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
     ;
 
 sufixoId
@@ -293,25 +308,25 @@ listaExpressoes
     | listaExpressoes VIRGULA expressao             {}
     ;
 
-tipoCast            : tipoEscalar                   {}
-                    | tipoDimensional               {}
+tipoCast            : tipoEscalar                   { $$ = $1; }
+                    | tipoDimensional               { $$ = NULL; }
                     ;
 
-tipo                : tipoCast                      {}
-                    | ID                            {}
+tipo                : tipoCast                      { $$ = $1; }
+                    | ID                            { $$ = $1; }
                     ;
 
-tipoEscalar         : TIPO_INTEIRO                  {}
-                    | TIPO_CARACTER                 {}
-                    | TIPO_FLUTUANTE                {}
-                    | TIPO_DECIMAL                  {}
-                    | TIPO_TEXTO                    {}
-                    | TIPO_BOOLEANO                 {} 
-                    | TIPO_FILA                     {}
-                    | TIPO_PILHA                    {}
-                    | TIPO_DEQUE                    {}
-                    | TIPO_CONJUNTO                 {}
-                    | TIPO_GRAFO                    {}
+tipoEscalar         : TIPO_INTEIRO                  { $$ = strdup("inteiro"); }
+                    | TIPO_CARACTER                 { $$ = NULL; }
+                    | TIPO_FLUTUANTE                { $$ = NULL; }
+                    | TIPO_DECIMAL                  { $$ = NULL; }
+                    | TIPO_TEXTO                    { $$ = NULL; }
+                    | TIPO_BOOLEANO                 { $$ = NULL; }
+                    | TIPO_FILA                     { $$ = NULL; }
+                    | TIPO_PILHA                    { $$ = NULL; }
+                    | TIPO_DEQUE                    { $$ = NULL; }
+                    | TIPO_CONJUNTO                 { $$ = NULL; }
+                    | TIPO_GRAFO                    { $$ = NULL; }
                     ;
 
 tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR   {}
@@ -323,10 +338,18 @@ tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR   {}
 %%
 
 int main (void) {
-	return yyparse ( );
+    pilha_escopos = criar_pilha();
+    push(pilha_escopos, "global");
+    ht = criar_tabela();
+
+    int res = yyparse();
+
+    liberar_tabela(ht);
+    liberar_pilha(pilha_escopos);
+    return res;
 }
 
 int yyerror (char *msg) {
-	fprintf (stderr, "%d: %s at '%s'\n", yylineno, msg, yytext);
-	return 0;
+    fprintf (stderr, "%d: %s at '%s'\n", yylineno, msg, yytext);
+    return 0;
 }
