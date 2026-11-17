@@ -1,6 +1,7 @@
 *.o
-*.h
-*.c
+y.tab.h
+y.tab.c
+lex.yy.c
 *.gv
 *.output
 compiler
