@@ -44,7 +44,7 @@ extern char * yytext;
 /*                            CONTROLE DE FLUXO                               */
 /* ========================================================================== */
 %token SE_TOK       SENAO_TOK     SENAO_SE_TOK
-%token PARA_TOK     ENQUANTO_TOK
+%token PARA_TOK     ENQUANTO_TOK  FACA_TOK
 %token ESCOLHA_TOK  CASO_TOK      PARE_TOK
 %token CONTINUE_TOK PADRAO_TOK
 
