@@ -8,7 +8,7 @@ typedef enum {
 }
 TipoErro;
 
-void printErro(TipoErro tipoErro, int linha);
+void printErro(TipoErro tipoErro, int linha, const char* fmt_msg, ...);
 int totalErros();
 int totalErroTipo(TipoErro tipoErro);
 
