@@ -1,14 +1,14 @@
-#ifndef REGISTRO
-#define REGISTRO
+#ifndef RECORD_H
+#define RECORD_H
 
-struct registro {
-	   char * code; /* field for storing the output code */
-	   char * opt1; /* field for another purpose */
+struct record {
+	   char * code;
+	   char * opt1;
 };
 
-typedef struct registro registro;
+typedef struct record record;
  
-void freeRecord(registro *);
-registro * createRecord(char *, char *);
+void freeRecord(record *);
+record * createRecord(char *, char *);
 
 #endif

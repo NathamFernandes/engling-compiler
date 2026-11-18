@@ -5,6 +5,7 @@
 
 #include "pilha.h"
 #include "hash_table.h"
+#include "record.h"
 
 pilha *pilha_escopos;
 HashTable *ht;
@@ -13,6 +14,8 @@ int yylex(void);
 int yyerror(char *s);
 extern int yylineno;
 extern char * yytext;
+
+char * cat(char *, char *, char *, char *, char *);
 
 %}
 
@@ -27,7 +30,7 @@ extern char * yytext;
 %token <iValue> LITERAL_INTEIRO LITERAL_BOOLEANO
 %token <cValue> LITERAL_CARACTER
 %token <fValue> LITERAL_FLUTUANTE
-%type <sValue> tipo tipoCast tipoEscalar
+%type <sValue> tipo tipoCast tipoEscalar cabecalho subprogramas instrucoes constantes declaracaoConstante expressao
 
 
 /* ========================================================================== */
@@ -88,14 +91,13 @@ extern char * yytext;
 
 %%
 
-programa    : cabecalho subprogramas instrucoes { }
+programa    : cabecalho subprogramas instrucoes { printf("%s;", $1); }
             ;
 
-cabecalho   : constantes tipoUsuario    {} 
+cabecalho   : constantes tipoUsuario    { $$ = "aaaa"; } 
             ; 
 
-constantes  :                                           {}
-            | constantes declaracaoConstante TERMINADOR {} 
+constantes  : | constantes declaracaoConstante TERMINADOR { $$ = $2; } 
             ; 
 
 declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { 
@@ -104,6 +106,7 @@ declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao {
                                 fprintf(stderr, "Erro semantico (linha %d): constante '%s' ja declarada.\n", yylineno, $3);
                             } else {
                                 printf("Constante inteira '%s' inserida com sucesso!\n", $3);
+                                $$ = cat("const int ", $3, " = ", "meu teste", "");
                             }
                         }
                     }
@@ -352,4 +355,21 @@ int main (void) {
 int yyerror (char *msg) {
     fprintf (stderr, "%d: %s at '%s'\n", yylineno, msg, yytext);
     return 0;
+}
+
+char * cat(char * s1, char * s2, char * s3, char * s4, char * s5){
+  int tam;
+  char * output;
+
+  tam = strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4) + strlen(s5)+ 1;
+  output = (char *) malloc(sizeof(char) * tam);
+  
+  if (!output){
+    printf("Allocation problem. Closing application...\n");
+    exit(0);
+  }
+  
+  sprintf(output, "%s%s%s%s%s", s1, s2, s3, s4, s5);
+  
+  return output;
 }

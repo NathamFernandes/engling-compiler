@@ -55,7 +55,7 @@ simbolo *buscar_simbolo(HashTable *ht, pilha *p, const char *nome) {
     return NULL;
 }
 
-int inserir_linha(HashTable *ht, pilha *p, const char *nome, const char *tipo, categoriaLinha cat, int linha_declaracao) {
+int inserir_linha(HashTable *ht, pilha *p, const char *nome, const char *tipo, categoriaSimbolo cat, int linha_declaracao) {
     char *escopo = escopo_atual(p);
     if (ht == NULL || escopo == NULL) return 0;
 
