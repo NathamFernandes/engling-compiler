@@ -1,0 +1,5 @@
+constante inteiro a = 10;
+constante flutuante b = a;
+constante inteiro c = "texto"; 
+constante inteiro a = 5;       
+constante inteiro z = d;

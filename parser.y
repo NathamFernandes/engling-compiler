@@ -6,31 +6,46 @@
 #include "pilha.h"
 #include "hash_table.h"
 #include "record.h"
+#include "erros.h"
+#include "tipos.h"
 
 pilha *pilha_escopos;
-HashTable *ht;
+HashTable *hash_table;
 
 int yylex(void);
 int yyerror(char *s);
 extern int yylineno;
 extern char * yytext;
 
+extern FILE *yyin;
+FILE *arquivo_saida = NULL;
+
 char * cat(char *, char *, char *, char *, char *);
 
 %}
 
 %union {
-    int     iValue;
-    char *  sValue;
-    char    cValue;
-    float   fValue;
+    int             iValue;
+    char            *sValue;
+    char            cValue;
+    float           fValue;
+    struct record   *rec; 
 };
 
 %token <sValue> ID LITERAL_TEXTO
 %token <iValue> LITERAL_INTEIRO LITERAL_BOOLEANO
 %token <cValue> LITERAL_CARACTER
 %token <fValue> LITERAL_FLUTUANTE
-%type <sValue> tipo tipoCast tipoEscalar cabecalho subprogramas instrucoes constantes declaracaoConstante expressao
+
+%type <rec> cabecalho subprogramas instrucoes
+%type <rec> constantes declaracaoConstante tipoUsuario
+%type <rec> tipo tipoCast tipoEscalar tipoDimensional
+%type <rec> expressao expressaoLogicaE expressaoRelacional expressaoAditiva
+%type <rec> expressaoMultiplicativa expressaoExponencial expressaoUnaria
+%type <rec> expressaoPosfixa termo sufixoId listaIndexacao
+%type <rec> listaExpressoesOpcional listaExpressoes
+
+%type <sValue> operadorRelacional operadorUnario
 
 
 /* ========================================================================== */
@@ -91,29 +106,79 @@ char * cat(char *, char *, char *, char *, char *);
 
 %%
 
-programa    : cabecalho subprogramas instrucoes { printf("%s;", $1); }
+programa    : cabecalho subprogramas instrucoes { 
+                if (totalErros() == 0) {
+                    char *codigo_final = cat($1->code, "\n", $2->code, "\n", $3->code);
+
+                    if (arquivo_saida != NULL) {
+                        fprintf(arquivo_saida, "%s\n", codigo_final);
+                    } else {
+                        printf("%s\n", codigo_final);
+                    }
+
+                    free(codigo_final);
+                } else {
+                    printf("Compilação abortada com %d erros(s).\n", totalErros());
+                }
+
+                freeRecord($1);
+                freeRecord($2);
+                freeRecord($3);
+            }
             ;
 
-cabecalho   : constantes tipoUsuario    { $$ = "aaaa"; } 
+cabecalho   : constantes tipoUsuario    {
+                char *code = cat($1->code, "\n", $2->code, "", "");
+                freeRecord($1);
+                freeRecord($2);
+                $$ = createRecord(strdup(code), NULL);
+                free(code);
+            } 
             ; 
 
-constantes  : | constantes declaracaoConstante TERMINADOR { $$ = $2; } 
+constantes  :                                           { $$ = createRecord(strdup(""), NULL); }  
+            | constantes declaracaoConstante TERMINADOR { 
+                char *code = cat($1->code, "\n", $2->code, ";\n", "");
+                freeRecord($1);
+                freeRecord($2);
+                $$ = createRecord(strdup(code), NULL);    
+                free(code);
+            }   
             ; 
 
 declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { 
-                        if ($2 != NULL && strcmp($2, "inteiro") == 0) {
-                            if (!inserir_linha(ht, pilha_escopos, $3, $2, CAT_CONSTANTE, yylineno)) {
-                                fprintf(stderr, "Erro semantico (linha %d): constante '%s' ja declarada.\n", yylineno, $3);
-                            } else {
-                                printf("Constante inteira '%s' inserida com sucesso!\n", $3);
-                                $$ = cat("const int ", $3, " = ", "meu teste", "");
-                            }
+                        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+                        simbolo *sym = buscar_simbolo(hash_table, pilha_escopos, $3);
+
+                        if (sym != NULL) {
+                            printErro(ERRO_SEMANTICO, yylineno, "constante '%s' já declarada na linha %d.", $3, sym->linha_declaracao);
+                            goto fim_declaracaoConstante;
                         }
+
+                        if (!tipos_compativeis($2->type, $5->type)) {
+                            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+                            goto fim_declaracaoConstante;
+                        }
+
+                        inserir_simbolo(hash_table, pilha_escopos, $3, $2->type, CAT_CONSTANTE, yylineno);
+                        free($$->code);
+                        liberar_tipo($$->type);
+
+                        char *temp = cat("const ", $2->code, " ", $3, " = ");
+                        $$->code = cat(temp, $5->code, "", "", "");
+                        $$->type = clonar_tipo($2->type);
+
+                        free(temp);
+
+                    fim_declaracaoConstante:
+                        freeRecord($2);
+                        freeRecord($5);
+                        free($3);
                     }
                     ;
 
-tipoUsuario :                                           {}
-            | tipoUsuario novoTipoUsuario TERMINADOR    {}
+tipoUsuario :                                           { $$ = createRecord(strdup(""), NULL); }
+            | tipoUsuario novoTipoUsuario TERMINADOR    { $$ = createRecord(strdup(""), NULL); }
             ;
 
 novoTipoUsuario : TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE ID {}
@@ -123,8 +188,8 @@ tipoUsuarioDeclaracoes  : declaracao TERMINADOR
                         | declaracao TERMINADOR tipoUsuarioDeclaracoes  {}
                         ;
 
-subprogramas    :                                       {}
-                | subprogramas subprograma TERMINADOR   {}
+subprogramas    :                                       { $$ = createRecord(strdup(""), NULL); }
+                | subprogramas subprograma TERMINADOR   { $$ = createRecord(strdup(""), NULL); }
                 ;
 
 subprograma     : funcao | procedimento {}
@@ -146,8 +211,8 @@ parametrosChamada           :                               {}
                             | expressao VIRGULA parametrosChamada   {}
                             ;
 
-instrucoes  : 
-            | instrucao TERMINADOR instrucoes   {} 
+instrucoes  :                                   { $$ = createRecord(strdup(""), NULL); }
+            | instrucao TERMINADOR instrucoes   { $$ = createRecord(strdup(""), NULL); } 
             ;
 
 instrucao   : declaracao            {} 
@@ -219,136 +284,202 @@ retorno             : RETORNE_TOK expressao {}
                     ;
 
 /* PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
-
-expressao   : expressaoLogicaE                            {}
-    | expressao OPERADOR_OU expressaoLogicaE            {}
+expressao
+    : expressaoLogicaE                                      { $$ = $1; }
+    | expressao OPERADOR_OU expressaoLogicaE                { $$ = NULL; }
     ;
     
 expressaoLogicaE
-    : expressaoRelacional                           {}
-    | expressaoLogicaE OPERADOR_E expressaoRelacional {}
+    : expressaoRelacional                                   { $$ = $1; }
+    | expressaoLogicaE OPERADOR_E expressaoRelacional       { $$ = NULL; }
     ;
 
 expressaoRelacional
-    : expressaoAditiva                              {}
-    | expressaoAditiva operadorRelacional expressaoAditiva {}
+    : expressaoAditiva                                      { $$ = $1; }
+    | expressaoAditiva operadorRelacional expressaoAditiva  { $$ = NULL; }
     ;
 
 operadorRelacional
-    : OPERADOR_IGUAL                                {}
-    | OPERADOR_DIFERENTE                            {}
-    | MENOR                                         {}
-    | OPERADOR_MENOR_IGUAL                          {}
-    | MAIOR                                         {}
-    | OPERADOR_MAIOR_IGUAL                          {}
+    : OPERADOR_IGUAL                                        { $$ = NULL; }
+    | OPERADOR_DIFERENTE                                    { $$ = NULL; }
+    | MENOR                                                 { $$ = NULL; }
+    | OPERADOR_MENOR_IGUAL                                  { $$ = NULL; }
+    | MAIOR                                                 { $$ = NULL; }
+    | OPERADOR_MAIOR_IGUAL                                  { $$ = NULL; }
     ;
 
 expressaoAditiva
-    : expressaoMultiplicativa                       {}
-    | expressaoAditiva OPERADOR_SOMA expressaoMultiplicativa      {}
-    | expressaoAditiva OPERADOR_SUBTRACAO expressaoMultiplicativa {}
+    : expressaoMultiplicativa                               { $$ = $1; }
+    | expressaoAditiva OPERADOR_SOMA expressaoMultiplicativa      { $$ = NULL; }
+    | expressaoAditiva OPERADOR_SUBTRACAO expressaoMultiplicativa { $$ = NULL; }
     ;
 
 expressaoMultiplicativa
-    : expressaoExponencial                          {}
-    | expressaoMultiplicativa OPERADOR_MULTIPLICACAO expressaoExponencial {}
-    | expressaoMultiplicativa OPERADOR_DIVISAO expressaoExponencial       {}
-    | expressaoMultiplicativa OPERADOR_MODULO expressaoExponencial        {}
+    : expressaoExponencial                                  { $$ = $1; }
+    | expressaoMultiplicativa OPERADOR_MULTIPLICACAO expressaoExponencial { $$ = NULL; }
+    | expressaoMultiplicativa OPERADOR_DIVISAO expressaoExponencial       { $$ = NULL; }
+    | expressaoMultiplicativa OPERADOR_MODULO expressaoExponencial        { $$ = NULL; }
     ;
 
 expressaoExponencial
-    : expressaoUnaria                               {}
-    | expressaoUnaria OPERADOR_EXPONENCIACAO expressaoExponencial {}
+    : expressaoUnaria                                       { $$ = $1; }
+    | expressaoUnaria OPERADOR_EXPONENCIACAO expressaoExponencial { $$ = NULL; }
     ;
 
 expressaoUnaria
-    : expressaoPosfixa                                  {}
-    | operadorUnario expressaoUnaria                    {}
-    | A_PARENTESE tipoCast F_PARENTESE expressaoUnaria  {}
+    : expressaoPosfixa                                      { $$ = $1; }
+    | operadorUnario expressaoUnaria                        { $$ = NULL; }
+    | A_PARENTESE tipoCast F_PARENTESE expressaoUnaria      { $$ = NULL; }
     ;
 
 operadorUnario
-    : OPERADOR_SUBTRACAO                            {}
-    | OPERADOR_NEGACAO                              {}
-    | OPERADOR_TAMANHO                              {}
+    : OPERADOR_SUBTRACAO                                    { $$ = NULL; }
+    | OPERADOR_NEGACAO                                      { $$ = NULL; }
+    | OPERADOR_TAMANHO                                      { $$ = NULL; }
     ;
 
 expressaoPosfixa
-    : termo                                         {}
-    | termo OPERADOR_INCREMENTO                     {}
-    | termo OPERADOR_DECREMENTO                     {}
+    : termo                                                 { $$ = $1; }
+    | termo OPERADOR_INCREMENTO                             { $$ = NULL; }
+    | termo OPERADOR_DECREMENTO                             { $$ = NULL; }
     ;
 
 termo
-    : ID                                            {}
-    | ID sufixoId                                   {}
-    | LITERAL_INTEIRO                               {}
-    | LITERAL_FLUTUANTE                             {}
-    | LITERAL_CARACTER                              {}
-    | LITERAL_TEXTO                                 {}
-    | LITERAL_BOOLEANO                              {}
-    | A_PARENTESE expressao F_PARENTESE             {}
-    | NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
+    : ID {
+        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+        if (s == NULL) {
+            printErro(ERRO_SEMANTICO, yylineno, "identificador '%s' nao declarado.", $1);
+            $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+        } else {
+            $$ = createRecord(strdup($1), clonar_tipo(s->tipo));
+        }
+        free($1);
+    }
+    | ID sufixoId                                           { $$ = NULL; }
+    | LITERAL_INTEIRO {
+        char buf[32];
+        sprintf(buf, "%d", $1);
+        $$ = createRecord(strdup(buf), criar_tipo(T_INTEIRO, NULL, NULL));
+    }
+    | LITERAL_FLUTUANTE {
+        char buf[64];
+        sprintf(buf, "%f", $1);
+        $$ = createRecord(strdup(buf), criar_tipo(T_FLUTUANTE, NULL, NULL));
+    }
+    | LITERAL_CARACTER {
+        char buf[8];
+        sprintf(buf, "'%c'", $1);
+        $$ = createRecord(strdup(buf), criar_tipo(T_CARACTER, NULL, NULL));
+    }
+    | LITERAL_TEXTO {
+        $$ = createRecord($1, criar_tipo(T_TEXTO, NULL, NULL));
+    }
+    | LITERAL_BOOLEANO {
+        $$ = createRecord(strdup($1 ? "1" : "0"), criar_tipo(T_BOOLEANO, NULL, NULL));
+    }
+    | A_PARENTESE expressao F_PARENTESE {
+        char *cod = cat("(", $2->code, ")", "", "");
+        $$ = createRecord(cod, clonar_tipo($2->type));
+        freeRecord($2);
+    }
+    | NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE { $$ = NULL; }
     ;
 
 sufixoId
-    : listaIndexacao                                {}
-    | A_PARENTESE listaExpressoesOpcional F_PARENTESE {}
+    : listaIndexacao                                        { $$ = NULL; }
+    | A_PARENTESE listaExpressoesOpcional F_PARENTESE     { $$ = NULL; }
     ;
 
 listaIndexacao
-    : A_COLCHETE expressao F_COLCHETE               {}
-    | listaIndexacao A_COLCHETE expressao F_COLCHETE {}
+    : A_COLCHETE expressao F_COLCHETE                       { $$ = NULL; }
+    | listaIndexacao A_COLCHETE expressao F_COLCHETE        { $$ = NULL; }
     ;
 
 listaExpressoesOpcional
-    :                                               {}
-    | listaExpressoes                               {}
+    :                                                       { $$ = NULL; }
+    | listaExpressoes                                       { $$ = NULL; }
     ;
 
 listaExpressoes
-    : expressao                                     {}
-    | listaExpressoes VIRGULA expressao             {}
+    : expressao                                             { $$ = NULL; }
+    | listaExpressoes VIRGULA expressao                     { $$ = NULL; }
     ;
 
 tipoCast            : tipoEscalar                   { $$ = $1; }
-                    | tipoDimensional               { $$ = NULL; }
+                    | tipoDimensional               { $$ = $1; }
                     ;
 
 tipo                : tipoCast                      { $$ = $1; }
-                    | ID                            { $$ = $1; }
+                    | ID {
+                        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+                        if (s == NULL || s->categoria != CAT_TIPO_USUARIO) {
+                            printErro(ERRO_SEMANTICO, yylineno, "tipo '%s' nao declarado.", $1);
+                            $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+                        } else {
+                            $$ = createRecord(strdup($1), criar_tipo(T_USUARIO, $1, NULL));
+                        }
+                        free($1);
+                    }
                     ;
 
-tipoEscalar         : TIPO_INTEIRO                  { $$ = strdup("inteiro"); }
-                    | TIPO_CARACTER                 { $$ = NULL; }
-                    | TIPO_FLUTUANTE                { $$ = NULL; }
-                    | TIPO_DECIMAL                  { $$ = NULL; }
-                    | TIPO_TEXTO                    { $$ = NULL; }
-                    | TIPO_BOOLEANO                 { $$ = NULL; }
-                    | TIPO_FILA                     { $$ = NULL; }
-                    | TIPO_PILHA                    { $$ = NULL; }
-                    | TIPO_DEQUE                    { $$ = NULL; }
-                    | TIPO_CONJUNTO                 { $$ = NULL; }
-                    | TIPO_GRAFO                    { $$ = NULL; }
+tipoEscalar         : TIPO_INTEIRO      { $$ = createRecord(strdup("int"), criar_tipo(T_INTEIRO, NULL, NULL)); }
+                    | TIPO_CARACTER     { $$ = createRecord(strdup("char"), criar_tipo(T_CARACTER, NULL, NULL)); }
+                    | TIPO_FLUTUANTE    { $$ = createRecord(strdup("float"), criar_tipo(T_FLUTUANTE, NULL, NULL)); }
+                    | TIPO_DECIMAL      { $$ = createRecord(strdup("double"), criar_tipo(T_DECIMAL, NULL, NULL)); }
+                    | TIPO_TEXTO        { $$ = createRecord(strdup("char*"), criar_tipo(T_TEXTO, NULL, NULL)); }
+                    | TIPO_BOOLEANO     { $$ = createRecord(strdup("int"), criar_tipo(T_BOOLEANO, NULL, NULL)); }
+                    | TIPO_FILA         { $$ = createRecord(strdup("Fila*"), criar_tipo(T_FILA, NULL, NULL)); }
+                    | TIPO_PILHA        { $$ = createRecord(strdup("Pilha*"), criar_tipo(T_PILHA, NULL, NULL)); }
+                    | TIPO_DEQUE        { $$ = createRecord(strdup("Deque*"), criar_tipo(T_DEQUE, NULL, NULL)); }
+                    | TIPO_CONJUNTO     { $$ = createRecord(strdup("Conjunto*"), criar_tipo(T_CONJUNTO, NULL, NULL)); }
+                    | TIPO_GRAFO        { $$ = createRecord(strdup("Grafo*"), criar_tipo(T_GRAFO, NULL, NULL)); }
                     ;
 
-tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR   {}
-                    ;
+tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR {
+                        Tipo *t_vetor = criar_tipo(T_VETOR, NULL, clonar_tipo($3->type));
+                        char *cod_c = cat($3->code, "*", "", "", "");
 
+                        $$ = createRecord(cod_c, t_vetor);
+                        freeRecord($3);
+                    }
+                    ;
 
 /* FIM DA PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 
 %%
 
-int main (void) {
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s <arquivo_entrada> [arquivo_saida.c]\n", argv[0]);
+        return 1;
+    }
+
+    yyin = fopen(argv[1], "r");
+    if (!yyin) {
+        perror("Erro ao abrir arquivo de entrada");
+        return 1;
+    }
+
+    if (argc >= 3) {
+        arquivo_saida = fopen(argv[2], "w");
+        if (!arquivo_saida) {
+            perror("Erro ao criar arquivo de saida");
+            fclose(yyin);
+            return 1;
+        }
+    }
+
     pilha_escopos = criar_pilha();
     push(pilha_escopos, "global");
-    ht = criar_tabela();
+    hash_table = criar_tabela();
 
     int res = yyparse();
 
-    liberar_tabela(ht);
+    liberar_tabela(hash_table);
     liberar_pilha(pilha_escopos);
+    fclose(yyin);
+    if (arquivo_saida) fclose(arquivo_saida);
+
     return res;
 }
 

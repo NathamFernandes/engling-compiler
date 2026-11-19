@@ -2,6 +2,7 @@
 #define TABELA_SIMBOLOS_H
 
 #include "pilha.h"
+#include "tipos.h"
 
 #define TAMANHO_TABELA 101
 
@@ -16,7 +17,7 @@ typedef enum {
 typedef struct simbolo {
     char *chave;
     char *nome;
-    char *tipo;
+    Tipo *tipo;
     categoriaSimbolo categoria;
     int linha_declaracao;
     struct simbolo *proximo;
@@ -27,7 +28,7 @@ typedef struct HashTable {
 } HashTable;
 
 HashTable *criar_tabela(void);
-int inserir_linha(HashTable *ht, pilha *p, const char *nome, const char *tipo, categoriaSimbolo cat, int linha_declaracao);
+int inserir_simbolo(HashTable *ht, pilha *p, const char *nome, Tipo *tipo, categoriaSimbolo cat, int linha_declaracao);
 simbolo *buscar_simbolo(HashTable *ht, pilha *p, const char *nome);
 void liberar_tabela(HashTable *ht);
 

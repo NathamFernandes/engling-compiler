@@ -1,14 +1,14 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-struct record {
-	   char * code;
-	   char * opt1;
-};
+#include "tipos.h"
 
-typedef struct record record;
- 
-void freeRecord(record *);
-record * createRecord(char *, char *);
+typedef struct record {
+    char *code;
+    Tipo *type;
+} record;
+
+record *createRecord(char *code, Tipo *type);
+void freeRecord(record *rec);
 
 #endif

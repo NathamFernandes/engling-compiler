@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define OK 1
+#define ERR 0
+
 static unsigned int calcular_hash(const char *str) {
     unsigned int hash = 0;
     for (int i = 0; str[i] != '\0'; i++) {
@@ -55,14 +58,9 @@ simbolo *buscar_simbolo(HashTable *ht, pilha *p, const char *nome) {
     return NULL;
 }
 
-int inserir_linha(HashTable *ht, pilha *p, const char *nome, const char *tipo, categoriaSimbolo cat, int linha_declaracao) {
+int inserir_simbolo(HashTable *ht, pilha *p, const char *nome, Tipo *tipo, categoriaSimbolo cat, int linha_declaracao) {
     char *escopo = escopo_atual(p);
-    if (ht == NULL || escopo == NULL) return 0;
-
-    /* Impede redeclaração no escopo atual ou sombreamento de escopos externos */
-    if (buscar_simbolo(ht, p, nome) != NULL) {
-        return 0;
-    }
+    if (ht == NULL || escopo == NULL) return ERR;
 
     char *chave = montar_chave(escopo, nome);
     unsigned int indice = calcular_hash(chave);
@@ -70,14 +68,14 @@ int inserir_linha(HashTable *ht, pilha *p, const char *nome, const char *tipo, c
     simbolo *novo = (simbolo *) malloc(sizeof(simbolo));
     novo->chave = chave;
     novo->nome = strdup(nome);
-    novo->tipo = strdup(tipo);
+    novo->tipo = clonar_tipo(tipo); // Tabela tem sua própria cópia segura do Tipo!
     novo->categoria = cat;
     novo->linha_declaracao = linha_declaracao;
 
     novo->proximo = ht->baldes[indice];
     ht->baldes[indice] = novo;
 
-    return 1;
+    return OK;
 }
 
 void liberar_tabela(HashTable *ht) {
@@ -90,7 +88,7 @@ void liberar_tabela(HashTable *ht) {
             atual = atual->proximo;
             free(temp->chave);
             free(temp->nome);
-            free(temp->tipo);
+            liberar_tipo(temp->tipo); // <-- Libera a árvore de Tipo sem vazamento
             free(temp);
         }
     }

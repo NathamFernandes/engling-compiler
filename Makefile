@@ -4,7 +4,7 @@ CFLAGS = -Wall -g -Ilib
 TARGET = compiler
 
 # Arquivos fontes das estruturas de dados em ./lib
-LIB_SRCS = lib/pilha.c lib/hash_table.c
+LIB_SRCS = lib/pilha.c lib/hash_table.c lib/erros.c lib/record.c lib/tipos.c
 
 # Arquivos gerados pelo Flex e Bison
 LEX_GEN = lex.yy.c
