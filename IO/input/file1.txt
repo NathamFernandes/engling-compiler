@@ -1,5 +1,9 @@
 constante inteiro a = 10;
 constante flutuante b = a;
-constante inteiro c = "texto"; 
-constante inteiro a = 5;       
-constante inteiro z = d;
+//constante inteiro c = "texto"; 
+//constante inteiro a = 5;       
+//constante inteiro z = d;
+
+se (a > 2) {
+    inteiro t = 0;
+};
