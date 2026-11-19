@@ -1,15 +1,24 @@
 %{
+    // libs padrão q lidam com string, etc
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+
+    // inclui as definições dos Token utilizados abaixo
     #include "y.tab.h"
 
-    extern int yyerror (char *msg);
+    // lib nossa para mostrar o erro lexico para o usuario
+    #include "erros.h"
 %}
 
+/* não sei o que faz, mas parece estar sendo usando no lex.yy.c, se tirar, não compila */
 %option noyywrap
+
+/* ao colocar essa linha, cria uma variavel externa (o parser também vê ela) */
+/* que diz qual linha está a análise do texto de entrada */
 %option yylineno
 
+/* macros para regex */
 DIGITO      [0-9]
 CARACTER    [a-zA-Z_]
 ID          {CARACTER}({CARACTER}|{DIGITO})*
@@ -95,6 +104,6 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 \"([^"\\\n]|\\.)*\"         { yylval.sValue = strdup(yytext); return LITERAL_TEXTO; }
 {ID}                        { yylval.sValue = strdup(yytext); return ID; }
 
-.                           { yyerror("Caracter inválido"); }
+.                           { printErro(ERRO_LEXICO, yylineno, "Caracter Inválido."); }
 
 %%
