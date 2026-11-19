@@ -11,4 +11,6 @@ typedef struct record {
 record *createRecord(char *code, Tipo *type);
 void freeRecord(record *rec);
 
+char * cat(char *, char *, char *, char *, char *);
+
 #endif
