@@ -1,8 +1,9 @@
 %{
+// libs padrão para lidar com strings e etc
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+// libs nossas para estruturas de dados, erros, etc
 #include "pilha.h"
 #include "hash_table.h"
 #include "record.h"
@@ -11,21 +12,26 @@
 #include "semantica.h"
 
 
+// declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
 HashTable *hash_table;
 
 int yylex(void);
 int yyerror(char *s);
+
+// esses caras vem do lexer
 extern int yylineno;
 extern char * yytext;
 
+// arquivo de entrada (na nosssa linguagem).
 extern FILE *yyin;
+// arquivo .c de saída (c simplificado)
 FILE *arquivo_saida = NULL;
-
-char * cat(char *, char *, char *, char *, char *);
 
 %}
 
+// acho que essa union é como uma capsula que armazena o valor atual
+// de algum Types ou Token (lexama, ou atributos)
 %union {
     int             iValue;
     char            *sValue;
@@ -34,11 +40,13 @@ char * cat(char *, char *, char *, char *, char *);
     struct record   *rec; 
 };
 
+// declaração de que Tokens possuem lexemas 
 %token <sValue> ID LITERAL_TEXTO
 %token <iValue> LITERAL_INTEIRO LITERAL_BOOLEANO
 %token <cValue> LITERAL_CARACTER
 %token <fValue> LITERAL_FLUTUANTE
 
+// declaração de que Types (LHS) são Records (ver record.h/.c)
 %type <rec> cabecalho subprogramas instrucoes
 %type <rec> constantes declaracaoConstante tipoUsuario
 %type <rec> tipo tipoCast tipoEscalar tipoDimensional
@@ -46,85 +54,85 @@ char * cat(char *, char *, char *, char *, char *);
 %type <rec> expressaoMultiplicativa expressaoExponencial expressaoUnaria
 %type <rec> expressaoPosfixa termo sufixoId listaIndexacao
 %type <rec> listaExpressoesOpcional listaExpressoes
-
-%type <sValue> operadorRelacional operadorUnario
-
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional
 
+// declaração dos Types (LHS) que são apenas strings
+%type <sValue> operadorRelacional operadorUnario
 
-/* ========================================================================== */
-/*                         ESTRUTURAS E DECLARAÇÕES                           */
-/* ========================================================================== */
-%token TIPO         CONSTANTE     FUNCAO
-%token PROCEDIMENTO RETORNE_TOK NOVO
 
-/* ========================================================================== */
-/*                               TIPOS DE DADOS                               */
-/* ========================================================================== */
-/* Tipos Primitivos */
-%token TIPO_INTEIRO TIPO_CARACTER TIPO_FLUTUANTE
-%token TIPO_DECIMAL TIPO_TEXTO    TIPO_BOOLEANO
+// declaração de tokens usados em declaracoes
+%token TIPO             CONSTANTE       FUNCAO
+%token PROCEDIMENTO     NOVO
 
-/* Tipos Estruturados */
-%token TIPO_VETOR   TIPO_FILA     TIPO_PILHA
-%token TIPO_DEQUE   TIPO_CONJUNTO TIPO_GRAFO
+// declaração de tokens de tipos primitivos
+%token TIPO_INTEIRO     TIPO_CARACTER   TIPO_FLUTUANTE
+%token TIPO_DECIMAL     TIPO_TEXTO      TIPO_BOOLEANO
 
-/* ========================================================================== */
-/*                            CONTROLE DE FLUXO                               */
-/* ========================================================================== */
-%token SE_TOK       SENAO_TOK     SENAO_SE_TOK
-%token PARA_TOK     ENQUANTO_TOK  FACA_TOK
-%token ESCOLHA_TOK  CASO_TOK      PARE_TOK
-%token CONTINUE_TOK PADRAO_TOK
+// declaração de tokens de tipos especiais
+%token TIPO_FILA    TIPO_PILHA      TIPO_GRAFO
+%token TIPO_DEQUE   TIPO_CONJUNTO 
 
-/* ========================================================================== */
-/*                                OPERADORES                                  */
-/* ========================================================================== */
-/* Aritméticos e Especiais */
-%token OPERADOR_INCREMENTO    OPERADOR_DECREMENTO
-%token OPERADOR_SOMA          OPERADOR_SUBTRACAO
-%token OPERADOR_MULTIPLICACAO OPERADOR_DIVISAO
-%token OPERADOR_MODULO        OPERADOR_EXPONENCIACAO
+// declaração de token de tipo estruturado
+%token TIPO_VETOR
+
+// declaração de tokens de controle de fluxo
+%token SE_TOK           SENAO_TOK       SENAO_SE_TOK
+%token PARA_TOK         ENQUANTO_TOK    PARE_TOK
+%token ESCOLHA_TOK      CASO_TOK        RETORNE_TOK
+%token CONTINUE_TOK     PADRAO_TOK  
+
+// declaração de tokens de operadores aritméticos
+%token OPERADOR_INCREMENTO      OPERADOR_DECREMENTO
+%token OPERADOR_SOMA            OPERADOR_SUBTRACAO
+%token OPERADOR_MULTIPLICACAO   OPERADOR_DIVISAO
+%token OPERADOR_MODULO          OPERADOR_EXPONENCIACAO
 %token OPERADOR_TAMANHO
 
-/* Lógicos */
-%token OPERADOR_OU            OPERADOR_E                  OPERADOR_NEGACAO
+// declaração de tokens de operadores lógicos
+%token OPERADOR_OU      OPERADOR_E      OPERADOR_NEGACAO
 
-/* Relacionais e Atribuição */
-%token OPERADOR_ATRIBUICAO    MENOR                       MAIOR
-%token OPERADOR_IGUAL         OPERADOR_DIFERENTE
-%token OPERADOR_MENOR_IGUAL   OPERADOR_MAIOR_IGUAL
+// declaração de tokens de operadores relacionais
+%token MENOR                    MAIOR
+%token OPERADOR_ATRIBUICAO      OPERADOR_DIFERENTE      
+%token OPERADOR_IGUAL           OPERADOR_MENOR_IGUAL  
+%token OPERADOR_MAIOR_IGUAL  
 
-/* ========================================================================== */
-/*                        DELIMITADORES E PONTUAÇÃO                           */
-/* ========================================================================== */
-%token VIRGULA      DOIS_PONTOS   TERMINADOR    PONTO
+// declaração de tokens de pontuação
+%token VIRGULA      DOIS_PONTOS     TERMINADOR    
+%token PONTO
 
-/* Escopo e Agrupamento */
-%token A_PARENTESE  F_PARENTESE
-%token A_CHAVE      F_CHAVE
-%token A_COLCHETE   F_COLCHETE
+// declaração de tokens de agrupamento/escopo
+%token A_PARENTESE      F_PARENTESE
+%token A_CHAVE          F_CHAVE
+%token A_COLCHETE       F_COLCHETE
 
-
+// regra inicial da gramática
 %start programa
 
 %%
 
 programa    : cabecalho subprogramas instrucoes { 
+                // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
+                    // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
                     char *codigo_final = cat($1->code, "\n", $2->code, "\n", $3->code);
 
+                    // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
+                    // se for null, ai só faz um printf no console mesmo do C simplificado
                     if (arquivo_saida != NULL) {
                         fprintf(arquivo_saida, "%s\n", codigo_final);
                     } else {
                         printf("%s\n", codigo_final);
                     }
 
+                    // libera ponteiro do char* declarado. mt importante sempre dar free.
                     free(codigo_final);
                 } else {
+                    // se tiver erro, mostra quantos
                     printf("Compilação abortada com %d erros(s).\n", totalErros());
                 }
 
+                // libera os records dos não terminais RHS "cabecalho", "subprogramas", "instrucoes"
                 freeRecord($1);
                 freeRecord($2);
                 freeRecord($3);
@@ -132,48 +140,81 @@ programa    : cabecalho subprogramas instrucoes {
             ;
 
 cabecalho   : constantes tipoUsuario    {
+                // concat de código dos não terminais
                 char *code = cat($1->code, "\n", $2->code, "", "");
+
+                // free dos records 
                 freeRecord($1);
                 freeRecord($2);
+
+                /* $$ é o "retorno" do LHS.
+                    logo, aqui está criando um record (é como uma capsula)
+                    onde o LHS "cabecalho" vai receber essa capsula.
+                    é como os nós filhos de comunicam com os pais, na árvore. */
+
+                // cria record para $$ com a concatenação "code" e type NULL
                 $$ = createRecord(strdup(code), NULL);
+
+                // libera o ponteiro de "code"
                 free(code);
             } 
             ; 
 
-constantes  :                                           { $$ = createRecord(strdup(""), NULL); }  
+constantes  :                                           { 
+                // se não tiver constantes, ele só "sobe" o record para o pai
+                $$ = createRecord(strdup(""), NULL); 
+            }  
             | constantes declaracaoConstante TERMINADOR { 
+                // concatenação
                 char *code = cat($1->code, "\n", $2->code, ";\n", "");
+                // free dos não terminais
                 freeRecord($1);
                 freeRecord($2);
+                // subida record com codigo concatenado para o pai
                 $$ = createRecord(strdup(code), NULL);    
+                // free no ponteiro
                 free(code);
             }   
             ; 
 
 declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao { 
+                        // aqui começa com a inicialização do record. 
                         $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+                        
+                        // faz a busca de achou "ID" na tabela de simbolos.
                         simbolo *sym = buscar_simbolo(hash_table, pilha_escopos, $3);
 
+                        // se achou o simbolo, quer dizer que essa variável ja existe e está sendo redeclarada
                         if (sym != NULL) {
                             printErro(ERRO_SEMANTICO, yylineno, "constante '%s' já declarada na linha %d.", $3, sym->linha_declaracao);
+                            // se tiver erro, vai pro GOTO fim_declaracaoConstante
                             goto fim_declaracaoConstante;
                         }
 
+                        // aqui faz a validação de tipos (coerção está envolvida). consultar a função para mais informações
+                        // basicamente compara se o tipo do não terminal "tipo" pode receber o tipo do não terminal "expressao"
                         if (!tipos_compativeis($2->type, $5->type)) {
                             printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+                            // se tiver erro, vai pro GOTO fim_declaracaoConstante
                             goto fim_declaracaoConstante;
                         }
 
+                        // se não tiver nenhum problema, insere o novo simbolo na tabela de simbolos
                         inserir_simbolo(hash_table, pilha_escopos, $3, $2->type, CAT_CONSTANTE, yylineno);
+                        // como n teve erros, faz free nos atributos do record pra colocar os novos
                         free($$->code);
                         liberar_tipo($$->type);
 
+                        // code recebe a concatenação do texto em C simplificado da declaração de constante
                         char *temp = cat("const ", $2->code, " ", $3, " = ");
                         $$->code = cat(temp, $5->code, "", "", "");
+                        // o tipo recebe justamente o não terminal "tipo", que está na segunda posição. 
                         $$->type = clonar_tipo($2->type);
 
+                        // free no ponteiro
                         free(temp);
 
+                    // label de goto onde termina a semantica, fazendo free nos records e ponteiro. 
                     fim_declaracaoConstante:
                         freeRecord($2);
                         freeRecord($5);
@@ -317,7 +358,6 @@ controle            : PARE_TOK      {}
 retorno             : RETORNE_TOK expressao {}
                     ;
 
-/* PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
 expressao
     : expressaoLogicaE                                      { $$ = $1; }
     | expressao OPERADOR_OU expressaoLogicaE                { $$ = NULL; }
@@ -392,13 +432,31 @@ expressaoPosfixa
 
 termo
     : ID {
+        // se o termo for um ID, tenta buscar na tabela de simbolos. termos só podem ser
+        // usados em expressoes, ou seja, se o termo for um ID, ele TEM que ter sido de-
+        // clarado na tabela de símbolos
         simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+
+        // se não existir, é NULL, e é erro semântico.
         if (s == NULL) {
+            // ele printa o erro
             printErro(ERRO_SEMANTICO, yylineno, "identificador '%s' nao declarado.", $1);
+
+            // e ele sobe o record com o $$, mesmo tendo o erro. tem um motivo para não 
+            // encerrar a excução logo e sim, subir o record:
+            
+            /* basicamente a gente quer um compilador de mostre TODOS os erros semanticos 
+            q ocorreram. então se a gnt cortar a execução, pode ser q tenham outros erros
+            semanticos q ainda n foram identificados. então o erro sobe do nó em nó 
+            mostrando erros, sequencialmente (busca em profundidade) até o nó raiz, onde lá, 
+            se totalErros() > 0, ele mostra a quantidade de erros */
             $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
         } else {
+            // se tiver tudo certo, ele sobe o Lexema do Token ID (que é o $1), junto do 
+            // tipo dele (ver mais informações em tipo.c/.h)
             $$ = createRecord(strdup($1), clonar_tipo(s->tipo));
         }
+        // free no lexema
         free($1);
     }
     | ID sufixoId                                           { $$ = NULL; }
@@ -490,22 +548,24 @@ tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR {
                     }
                     ;
 
-/* FIM DA PARTE QUE TA DANDO CONFLITO, PROVAVELMENTE */
-
 %%
 
+// programa main, que vai faz o parse do código na linguagem de origem
 int main(int argc, char **argv) {
+    // se tiver menos de 2 argumentos tá sendo utilizado errado
     if (argc < 2) {
         fprintf(stderr, "Uso: %s <arquivo_entrada> [arquivo_saida.c]\n", argv[0]);
         return 1;
     }
 
+    // le o arquivo de entrada na linguagem origem
     yyin = fopen(argv[1], "r");
     if (!yyin) {
         perror("Erro ao abrir arquivo de entrada");
         return 1;
     }
 
+    // se tiver mais de 3 argumentos, ai ta certo o uso
     if (argc >= 3) {
         arquivo_saida = fopen(argv[2], "w");
         if (!arquivo_saida) {
@@ -515,7 +575,10 @@ int main(int argc, char **argv) {
         }
     }
 
+    // incializa pilha
     pilha_escopos = criar_pilha();
+    // pusha o escopo global ("piso" da pilha) para a pilha
+    // o motivo é que na nossa linguagem o escopo já é global, desde o início
     push(pilha_escopos, "global");
     hash_table = criar_tabela();
 
@@ -529,24 +592,9 @@ int main(int argc, char **argv) {
     return res;
 }
 
+// função de erro padrão de sintaxe, acho que não está sendo utilizada,
+// mas se tirar daqui e do cabeçalho dá erro de referencia
 int yyerror (char *msg) {
     fprintf (stderr, "%d: %s at '%s'\n", yylineno, msg, yytext);
     return 0;
-}
-
-char * cat(char * s1, char * s2, char * s3, char * s4, char * s5){
-  int tam;
-  char * output;
-
-  tam = strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4) + strlen(s5)+ 1;
-  output = (char *) malloc(sizeof(char) * tam);
-  
-  if (!output){
-    printf("Allocation problem. Closing application...\n");
-    exit(0);
-  }
-  
-  sprintf(output, "%s%s%s%s%s", s1, s2, s3, s4, s5);
-  
-  return output;
 }
