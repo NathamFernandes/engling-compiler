@@ -65,6 +65,9 @@ FILE *arquivo_saida = NULL;
 %token PROCEDIMENTO     NOVO
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional
 
+// declaração de tokens usados em declaracoes
+%token TIPO             CONSTANTE       FUNCAO
+%token PROCEDIMENTO     NOVO
 
 // declaração de tokens de tipos primitivos
 %token TIPO_INTEIRO     TIPO_CARACTER   TIPO_FLUTUANTE
