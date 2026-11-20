@@ -59,12 +59,6 @@ FILE *arquivo_saida = NULL;
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
 
-
-// declaração de tokens usados em declaracoes
-%token TIPO             CONSTANTE       FUNCAO
-%token PROCEDIMENTO     NOVO
-%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional
-
 // declaração de tokens usados em declaracoes
 %token TIPO             CONSTANTE       FUNCAO
 %token PROCEDIMENTO     NOVO
