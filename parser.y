@@ -9,6 +9,8 @@
 #include "record.h"
 #include "erros.h"
 #include "tipos.h"
+#include "semantica.h"
+
 
 // declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
@@ -59,6 +61,8 @@ FILE *arquivo_saida = NULL;
 // declaração de tokens usados em declaracoes
 %token TIPO             CONSTANTE       FUNCAO
 %token PROCEDIMENTO     NOVO
+%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional
+
 
 // declaração de tokens de tipos primitivos
 %token TIPO_INTEIRO     TIPO_CARACTER   TIPO_FLUTUANTE
@@ -253,12 +257,12 @@ parametrosChamada           :                               {}
                             ;
 
 instrucoes  :                                   { $$ = createRecord(strdup(""), NULL); }
-            | instrucao TERMINADOR instrucoes   { $$ = createRecord(strdup(""), NULL); } 
+            | instrucao TERMINADOR instrucoes   { $$ = createRecord(cat($1->code, ";\n", $3->code, "", ""), NULL); freeRecord($1); freeRecord($3); } 
             ;
 
-instrucao   : declaracao            {} 
-            | atribuicao            {}
-            | condicionalSe         {}
+instrucao   : declaracao            { $$ = createRecord(strdup(""), NULL); } 
+            | atribuicao            { $$ = createRecord(strdup(""), NULL); }
+            | condicionalSe         { $$ = $1; }
             | condicionalCaso       {}
             | lacoPara              {}
             | lacoEnquanto          {}
@@ -291,15 +295,45 @@ cremento            : variavel OPERADOR_INCREMENTO                      {}
 declaracao          : tipo ID                                       {} 
                     ;
 
-condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE listaSenaoSe senaoOpcional {} 
+condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pilha_escopos, "bloco_se"); } instrucoes { pop(pilha_escopos); } F_CHAVE listaSenaoSe senaoOpcional {
+                            verificarCondicaoBool($3, "se", yylineno);
+
+                            char *instrucaoIf = cat("if (", $3->code, ") {\n", $7->code, "}");
+
+                            $$ = createRecord(cat(instrucaoIf, "", $10->code, $11->code, ""), NULL);
+
+                            free(instrucaoIf);
+                            freeRecord($3);
+                            freeRecord($7);
+                            freeRecord($10);
+                            freeRecord($11);
+                    } 
                     ;
 
-listaSenaoSe        :                                                                                           {}
-                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE    {}
+listaSenaoSe        :                                                                                           { $$ = createRecord(strdup(""), NULL); }
+                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE    {
+                        verificarCondicaoBool($4, "senaose", yylineno);
+
+                        char *instrucaoSenaoSe = cat(" else if (", $4->code, ") {\n", $7->code, "}");
+
+                        $$ = createRecord(cat($1->code, instrucaoSenaoSe, "", "", ""), NULL);
+
+                        free(instrucaoSenaoSe);
+                        freeRecord($1);
+                        freeRecord($4);
+                        freeRecord($7);
+                    }
                     ;
 
-senaoOpcional       :                                       {}
-                    | SENAO_TOK A_CHAVE instrucoes F_CHAVE  {}
+senaoOpcional       :                                       { $$ = createRecord(strdup(""), NULL); }
+                    | SENAO_TOK A_CHAVE instrucoes F_CHAVE  {
+                        char *instrucaoSenao = cat(" senao {\n", $3->code, "}", "", "");
+
+                        $$ = createRecord(instrucaoSenao, NULL);
+
+                        free(instrucaoSenao);
+                        freeRecord($3);
+                    }
                     ;
 
 condicionalCaso     : ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;
@@ -336,16 +370,28 @@ expressaoLogicaE
 
 expressaoRelacional
     : expressaoAditiva                                      { $$ = $1; }
-    | expressaoAditiva operadorRelacional expressaoAditiva  { $$ = NULL; }
+    | expressaoAditiva operadorRelacional expressaoAditiva  { 
+        int expressaoValida = tipos_compativeis($1->type, $3->type) && tipos_compativeis($3->type, $1->type) != 0;
+
+        if (!expressaoValida) {
+            printErro(ERRO_SEMANTICO, yylineno, "operandos incompativeis na comparacao.");
+        }
+
+        $$ = createRecord(cat($1->code, " ", $2, " ", $3->code), criar_tipo(T_BOOLEANO, NULL, NULL));
+
+        free($2);
+        freeRecord($1);
+        freeRecord($3);
+}
     ;
 
 operadorRelacional
-    : OPERADOR_IGUAL                                        { $$ = NULL; }
-    | OPERADOR_DIFERENTE                                    { $$ = NULL; }
-    | MENOR                                                 { $$ = NULL; }
-    | OPERADOR_MENOR_IGUAL                                  { $$ = NULL; }
-    | MAIOR                                                 { $$ = NULL; }
-    | OPERADOR_MAIOR_IGUAL                                  { $$ = NULL; }
+    : OPERADOR_IGUAL                                        { $$ = strdup("="); }
+    | OPERADOR_DIFERENTE                                    { $$ = strdup("!<"); }
+    | MENOR                                                 { $$ = strdup("<"); }
+    | OPERADOR_MENOR_IGUAL                                  { $$ = strdup("<="); }
+    | MAIOR                                                 { $$ = strdup(">"); }
+    | OPERADOR_MAIOR_IGUAL                                  { $$ = strdup(">="); }
     ;
 
 expressaoAditiva
