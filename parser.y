@@ -54,7 +54,7 @@ FILE *arquivo_saida = NULL;
 %type <rec> expressaoMultiplicativa expressaoExponencial expressaoUnaria
 %type <rec> expressaoPosfixa termo sufixoId listaIndexacao
 %type <rec> listaExpressoesOpcional listaExpressoes
-%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional
+%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional declaracao atribuicao
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -114,8 +114,8 @@ programa    : cabecalho subprogramas instrucoes {
                 // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
                     // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
-                    char *codigo_final = cat($1->code, "\n", $2->code, "\n", $3->code);
-
+                    char *temp_final = cat($1->code, "\n", $2->code, "\n", "");
+                    char *codigo_final = cat(temp_final, "int main() {\n", $3->code, "};", "");
                     // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
                     // se for null, ai só faz um printf no console mesmo do C simplificado
                     if (arquivo_saida != NULL) {
@@ -125,6 +125,7 @@ programa    : cabecalho subprogramas instrucoes {
                     }
 
                     // libera ponteiro do char* declarado. mt importante sempre dar free.
+                    free(temp_final);
                     free(codigo_final);
                 } else {
                     // se tiver erro, mostra quantos
@@ -165,7 +166,7 @@ constantes  :                                           {
             }  
             | constantes declaracaoConstante TERMINADOR { 
                 // concatenação
-                char *code = cat($1->code, "\n", $2->code, ";\n", "");
+                char *code = cat($1->code, "", $2->code, ";\n", "");
                 // free dos não terminais
                 freeRecord($1);
                 freeRecord($2);
@@ -181,11 +182,11 @@ declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao {
                         $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
                         
                         // faz a busca de achou "ID" na tabela de simbolos.
-                        simbolo *sym = buscar_simbolo(hash_table, pilha_escopos, $3);
+                        simbolo *sym_1 = buscar_simbolo(hash_table, pilha_escopos, $3);
 
                         // se achou o simbolo, quer dizer que essa variável ja existe e está sendo redeclarada
-                        if (sym != NULL) {
-                            printErro(ERRO_SEMANTICO, yylineno, "constante '%s' já declarada na linha %d.", $3, sym->linha_declaracao);
+                        if (sym_1 != NULL) {
+                            printErro(ERRO_SEMANTICO, yylineno, "constante '%s' já declarada na linha %d.", $3, sym_1->linha_declaracao);
                             // se tiver erro, vai pro GOTO fim_declaracaoConstante
                             goto fim_declaracaoConstante;
                         }
@@ -256,10 +257,14 @@ parametrosChamada           :                               {}
                             ;
 
 instrucoes  :                                   { $$ = createRecord(strdup(""), NULL); }
-            | instrucao TERMINADOR instrucoes   { $$ = createRecord(cat($1->code, ";\n", $3->code, "", ""), NULL); freeRecord($1); freeRecord($3); } 
+            | instrucao TERMINADOR instrucoes   { 
+                $$ = createRecord(cat($1->code, ";\n", $3->code, "", ""), NULL); 
+                freeRecord($1); 
+                freeRecord($3); 
+            } 
             ;
 
-instrucao   : declaracao            { $$ = createRecord(strdup(""), NULL); } 
+instrucao   : declaracao            { $$ = $1; } 
             | atribuicao            { $$ = createRecord(strdup(""), NULL); }
             | condicionalSe         { $$ = $1; }
             | condicionalCaso       {}
@@ -270,11 +275,11 @@ instrucao   : declaracao            { $$ = createRecord(strdup(""), NULL); }
             | retorno               {}
             ;
 
-atribuicao          : atribuicaoComDeclaracao       {}
-                    | atribuicaoSemDeclaracao       {}
+atribuicao          : inicializacao       {}
+                    | apenasAtribuicao       {}
                     ;
 
-atribuicaoComDeclaracao : declaracao OPERADOR_ATRIBUICAO expressao  {}
+inicializacao : declaracao OPERADOR_ATRIBUICAO expressao  {}
                         ;
 
 variavel
@@ -283,7 +288,7 @@ variavel
     | variavel A_COLCHETE expressao F_COLCHETE      {}
     ;
 
-atribuicaoSemDeclaracao : variavel OPERADOR_ATRIBUICAO expressao            {}
+apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {}
                         | cremento                                          {}
                         ;
 
@@ -291,7 +296,28 @@ cremento            : variavel OPERADOR_INCREMENTO                      {}
                     | variavel OPERADOR_DECREMENTO                      {}
                     ;
 
-declaracao          : tipo ID                                       {} 
+declaracao          : tipo ID                                              {   
+                        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+                        simbolo *sym_2 = buscar_simbolo(hash_table, pilha_escopos, $2);
+                        
+                        if (sym_2 != NULL) {
+                            printErro(ERRO_SEMANTICO, yylineno, "variável '%s' já declarada na linha %d.", $2, sym_2->linha_declaracao);
+                            goto fim_declaracao;
+                        }
+                        
+                        inserir_simbolo(hash_table, pilha_escopos, $2, $1->type, CAT_VARIAVEL, yylineno);
+
+                        free($$->code);
+                        liberar_tipo($$->type);
+
+                        $$->code = cat($1->code, " ", $2, "", "");
+                        $$->type = clonar_tipo($1->type);
+                        
+                    fim_declaracao:
+                        freeRecord($1);
+                        free($2);
+                    } 
                     ;
 
 condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pilha_escopos, "bloco_se"); } instrucoes { pop(pilha_escopos); } F_CHAVE listaSenaoSe senaoOpcional {
@@ -341,7 +367,7 @@ listaCasos          :                                                       {}
                     | listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes  {} 
                     ;
 
-lacoPara            : PARA_TOK A_PARENTESE atribuicaoComDeclaracao TERMINADOR expressao TERMINADOR atribuicaoSemDeclaracao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
                     ;
 
 lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
