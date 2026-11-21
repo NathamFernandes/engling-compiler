@@ -1,0 +1,6 @@
+tipo {
+    inteiro x;
+    caracter y;
+} MeuTipo;
+
+MeuTipo a;
