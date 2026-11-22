@@ -57,7 +57,7 @@ int struct_counter = 0;
 %type <rec> expressaoPosfixa termo sufixoId listaIndexacao
 %type <rec> listaExpressoesOpcional listaExpressoes
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional declaracao atribuicao
-%type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
+%type <rec> novoTipoUsuario tipoUsuarioDeclaracoes variavel
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -333,9 +333,36 @@ inicializacao : declaracao OPERADOR_ATRIBUICAO expressao  {}
                         ;
 
 variavel
-    : ID                                            {}  
-    | variavel PONTO ID                             {}
-    | variavel A_COLCHETE expressao F_COLCHETE      {}
+    : ID {
+        // se a variavel for um ID, tenta buscar na tabela de simbolos. variaveis só podem ser
+        // usadas em expressoes ou atribuicoes, ou seja, se for um ID, ele TEM que ter sido de-
+        // clarado na tabela de símbolos
+        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+
+        // se não existir, é NULL, e é erro semântico.
+        if (s == NULL) {
+            // ele printa o erro
+            printErro(ERRO_SEMANTICO, yylineno, "identificador '%s' nao declarado.", $1);
+
+            // e ele sobe o record com o $$, mesmo tendo o erro. tem um motivo para não 
+            // encerrar a excução logo e sim, subir o record:
+            
+            /* basicamente a gente quer um compilador de mostre TODOS os erros semanticos 
+            q ocorreram. então se a gnt cortar a execução, pode ser q tenham outros erros
+            semanticos q ainda n foram identificados. então o erro sobe do nó em nó 
+            mostrando erros, sequencialmente (busca em profundidade) até o nó raiz, onde lá, 
+            se totalErros() > 0, ele mostra a quantidade de erros */
+            $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+        } else {
+            // se tiver tudo certo, ele sobe o Lexema do Token ID (que é o $1), junto do 
+            // tipo dele (ver mais informações em tipo.c/.h)
+            $$ = createRecord(strdup($1), clonar_tipo(s->tipo));
+        }
+        // free no lexema
+        free($1);
+    }
+    | variavel PONTO ID                             { $$ = NULL; }
+    | variavel A_COLCHETE expressao F_COLCHETE      { $$ = NULL; }
     ;
 
 apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {}
@@ -506,35 +533,8 @@ expressaoPosfixa
     ;
 
 termo
-    : ID {
-        // se o termo for um ID, tenta buscar na tabela de simbolos. termos só podem ser
-        // usados em expressoes, ou seja, se o termo for um ID, ele TEM que ter sido de-
-        // clarado na tabela de símbolos
-        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
-
-        // se não existir, é NULL, e é erro semântico.
-        if (s == NULL) {
-            // ele printa o erro
-            printErro(ERRO_SEMANTICO, yylineno, "identificador '%s' nao declarado.", $1);
-
-            // e ele sobe o record com o $$, mesmo tendo o erro. tem um motivo para não 
-            // encerrar a excução logo e sim, subir o record:
-            
-            /* basicamente a gente quer um compilador de mostre TODOS os erros semanticos 
-            q ocorreram. então se a gnt cortar a execução, pode ser q tenham outros erros
-            semanticos q ainda n foram identificados. então o erro sobe do nó em nó 
-            mostrando erros, sequencialmente (busca em profundidade) até o nó raiz, onde lá, 
-            se totalErros() > 0, ele mostra a quantidade de erros */
-            $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
-        } else {
-            // se tiver tudo certo, ele sobe o Lexema do Token ID (que é o $1), junto do 
-            // tipo dele (ver mais informações em tipo.c/.h)
-            $$ = createRecord(strdup($1), clonar_tipo(s->tipo));
-        }
-        // free no lexema
-        free($1);
-    }
-    | ID sufixoId                                           { $$ = NULL; }
+    : variavel                                              { $$ = $1; }
+    | ID A_PARENTESE listaExpressoesOpcional F_PARENTESE    { $$ = NULL; }
     | LITERAL_INTEIRO {
         char buf[32];
         sprintf(buf, "%d", $1);
