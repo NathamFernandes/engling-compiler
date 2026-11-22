@@ -824,10 +824,16 @@ int main(int argc, char **argv) {
 
     int res = yyparse();
 
+    if (res != 0 || totalErros() > 0) {
+        fprintf(stderr, "A compilação falhou com %d erros.\n", totalErros());
+    }
+
     liberar_tabela(hash_table);
     liberar_pilha(pilha_escopos);
     fclose(yyin);
-    if (arquivo_saida) fclose(arquivo_saida);
+
+    if (arquivo_saida) 
+        fclose(arquivo_saida);
 
     return res;
 }
