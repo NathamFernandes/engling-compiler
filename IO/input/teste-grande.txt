@@ -1,0 +1,12 @@
+constante inteiro x = 10;
+constante caracter z = 'a';
+
+tipo {
+    inteiro a;
+    inteiro b;
+} MeuTipo;
+
+se (x > 10) {
+    inteiro y = 10;
+    y++;
+};
