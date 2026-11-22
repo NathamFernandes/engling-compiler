@@ -5,9 +5,9 @@
 static int contagemErros[3] = { 0, 0, 0 };
 
 static const char *strErro[] = {
-    "erro léxico",
-    "erro sintático",
-    "erro semantico",
+    "Erro Léxico",
+    "Erro Sintático",
+    "Erro Semântico",
 };
 
 void printErro(TipoErro tipoErro, int linha, const char *fmt_msg, ...) {
