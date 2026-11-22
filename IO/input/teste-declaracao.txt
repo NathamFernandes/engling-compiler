@@ -4,6 +4,9 @@ constante flutuante b = a;
 //constante inteiro a = 5;       
 //constante inteiro z = d;
 
+inteiro i = 0;
+i++;
+
 se (a > 2) {
     caracter t;
 };
