@@ -282,83 +282,210 @@ atribuicao          : inicializacao       { $$ = $1; }
                     ;
 
 inicializacao : declaracao OPERADOR_ATRIBUICAO expressao  {
-                bool tiposCompativeis = tipos_compativeis($1->type, $3->type); 
+    /* Exemplo usado nos comentários:   inteiro idade = 20;
+     *
+     * Quando esta ação roda, o parser já reconheceu a linha inteira:
+     *   $1 = record de 'declaracao'  -> code: "int idade"  | type: T_INTEIRO
+     *   $2 = o token '='             -> não carrega valor, por isso não é usado
+     *   $3 = record de 'expressao'   -> code: "20"         | type: T_INTEIRO */
 
-                if (!tiposCompativeis) {
-                    printErro(ERRO_SEMANTICO, yylineno, "Tipos incompativeis na atribuicao.");
-                }
+    bool tiposCompativeis = tipos_compativeis($1->type, $3->type);
+    /* Pergunta: "um valor do tipo $3 pode ser guardado numa variável do tipo $1?"
+     * A ordem importa: (destino, origem), e a função é direcional.
+     *   inteiro idade = 20;      -> (inteiro, inteiro)   -> true
+     *   flutuante f = 20;        -> (flutuante, inteiro) -> true  (inteiro vira flutuante)
+     *   inteiro n = 1.5;         -> (inteiro, flutuante) -> false (perderia a parte decimal)
+     *   inteiro n = "texto";     -> (inteiro, texto)     -> false
+     * O 'bool' exige #include <stdbool.h> no prólogo do parser.y. */
 
-                    
-                $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+    if (!tiposCompativeis) {
+        /* Só entra aqui nos exemplos "false" acima, como  inteiro n = 1.5; */
+        printErro(ERRO_SEMANTICO, yylineno, "Tipos incompativeis na atribuicao.");
+        /* Imprime algo como "erro semântico na linha 7: Tipos incompativeis..."
+         * e incrementa o contador de erros. A análise continua para achar outros
+         * erros, mas, no fim, o programa vê totalErros() > 0 e não gera o C. */
+    }
 
-                freeRecord($1);
-                freeRecord($3);
-              }
+    $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+    /* Monta o código C da inicialização juntando os pedaços:
+     *   "int idade" + " = " + "20"   ->   "int idade = 20"
+     * O ';' não entra aqui: quem o acrescenta é a regra 'instrucoes'.
+     * O 2º argumento é NULL porque uma atribuição não é uma expressão, ou seja,
+     * não tem tipo para repassar. Quem usa o resultado só precisa do código. */
+
+    freeRecord($1);
+    /* Libera o record de "int idade". O cat() já copiou o texto para a string
+     * nova do $$, então o original não é mais necessário. */
+
+    freeRecord($3);
+    /* Libera o record de "20", pelo mesmo motivo. */
+}
+;
                         ;
 
 variavel
     : ID                                            {
+        /* Exemplo usado nos comentários:   idade = 21;
+         *
+         * Esta regra reconhece o LADO ESQUERDO de uma atribuição.
+         * Quando a ação roda, o lexer já entregou o token ID:
+         *   $1 = string "idade" (alocada com strdup no lexer, então é nossa) */
+
         simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+        /* Procura "idade" na tabela de símbolos, do escopo atual subindo até o global.
+         *   Achou  -> s aponta para o símbolo (com categoria e tipo)
+         *   Não achou -> s == NULL
+         * Exemplo: se antes houve `inteiro idade = 20;`, s->tipo é T_INTEIRO
+         * e s->categoria é CAT_VARIAVEL. */
+
         Tipo *tipoDaVariavel;
+        /* Vai guardar o tipo que esta variável terá como atributo. Cada ramo
+         * abaixo atribui um valor, então nunca é lido sem inicializar. */
 
         if (s == NULL) {
+            /* Caso: `z = 1;` sem nunca ter declarado 'z' */
             printErro(ERRO_SEMANTICO, yylineno, "identificador %s nao declarado.", $1);
-            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL); 
+            /* Imprime algo como "erro semântico na linha 5: identificador z nao declarado."
+             * e conta o erro. No fim, totalErros() > 0 impede a geração do C. */
+            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+            /* T_ERRO é aceito por tipos_compativeis de propósito: a atribuição
+             * `z = 1;` não gera uma SEGUNDA mensagem de "tipo incompatível".
+             * Um erro, uma mensagem. */
         }
         else if (s->categoria == CAT_CONSTANTE) {
+            /* Caso: `constante inteiro MAX = 10;` e depois `MAX = 20;` */
             printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
+            /* "erro semântico na linha 8: não é possível modificar a constante 'MAX'." */
             tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+            /* Mesmo motivo: evita cascata de erros nesta linha. */
         }
         else if (s->categoria != CAT_VARIAVEL) {
+            /* Caso: o nome existe, mas é outra coisa, como uma função.
+             * Ex.: `funcao inteiro soma(...)` e depois `soma = 3;` */
             printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
+            /* "erro semântico na linha 9: 'soma' nao é uma variavel." */
             tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
         }
         else {
+            /* Caso normal: existe e é variável. Ex.: `idade = 21;` com 'idade' declarada. */
             tipoDaVariavel = clonar_tipo(s->tipo);
+            /* Copia o tipo da tabela (T_INTEIRO no exemplo). É cópia, e não o
+             * ponteiro da tabela, porque o record vai liberar este Tipo com
+             * freeRecord; liberar o original da tabela corromperia os próximos usos. */
         }
 
         $$ = createRecord(strdup($1), tipoDaVariavel);
+        /* Monta o record que sobe para a regra de atribuição:
+         *   code = "idade"   (o texto C do lado esquerdo, igual ao nome)
+         *   type = T_INTEIRO (ou T_ERRO nos casos de erro)
+         * A regra seguinte usa o type para checar `idade = 1.5;` (incompatível)
+         * e o code para montar "idade = 21". */
+
         free($1);
-    }  
+        /* Libera a string "idade" que o lexer alocou. O strdup acima já fez uma
+         * cópia para o record, então o original não é mais necessário. */
+    }
     | variavel PONTO ID                             {}
     | variavel A_COLCHETE expressao F_COLCHETE      {}
     ;
 
 apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {
-                    int tiposCompativeis = tipos_compativeis($1->type, $3->type);
+    /* Exemplo:   idade = 21;   (com 'idade' já declarada como inteiro)
+     *
+     * Quando esta ação roda, o parser já reconheceu a linha inteira:
+     *   $1 = record de 'variavel'  -> code: "idade"  | type: T_INTEIRO
+     *   $2 = o token '='           -> não carrega valor, por isso não é usado
+     *   $3 = record de 'expressao' -> code: "21"     | type: T_INTEIRO
+     *
+     * Diferença para 'inicializacao': aqui NINGUÉM insere símbolo na tabela. A
+     * variável já tem que existir, e quem confere isso é a regra 'variavel'. */
 
-                    if (!tiposCompativeis) {
-                        printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na atribuicao.");
-                    }
+    int tiposCompativeis = tipos_compativeis($1->type, $3->type);
+    /* Pergunta: "um valor do tipo $3 pode ser guardado numa variável do tipo $1?"
+     * A ordem importa: (destino, origem), e a função é direcional.
+     *   idade = 21;     -> (inteiro, inteiro)   -> 1 (verdadeiro)
+     *   f = 21;         -> (flutuante, inteiro) -> 1 (inteiro vira flutuante)
+     *   idade = 1.5;    -> (inteiro, flutuante) -> 0 (perderia a parte decimal)
+     *   idade = "ana";  -> (inteiro, texto)     -> 0
+     * Se a variável não existe (`z = 1;`), $1->type é T_ERRO, que a função aceita
+     * de propósito: o erro de "não declarado" já foi dado em 'variavel', e aqui
+     * não sai uma segunda mensagem para a mesma linha. */
 
-                    $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+    if (!tiposCompativeis) {
+        /* Só entra nos exemplos "0" acima, como  idade = 1.5; */
+        printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na atribuicao.");
+        /* Imprime algo como "erro semântico na linha 6: tipo incompativel na atribuicao."
+         * e conta o erro. A análise continua para achar outros erros, e no fim
+         * totalErros() > 0 impede a geração do C. */
+    }
 
-                    freeRecord($1);
-                    freeRecord($3);
-                 }
+    $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+    /* Monta o código C juntando os pedaços:
+     *   "idade" + " = " + "21"   ->   "idade = 21"
+     * Funciona também com vetor, porque o code de 'variavel' já vem montado:
+     *   v[2] = 7;   ->   "v[2] = 7"
+     * O ';' não entra aqui: quem o acrescenta é a regra 'instrucoes'. Isso é
+     * importante porque esta regra também é usada no cabeçalho do 'para'
+     * (`for (...; ...; i = i + 1)`), onde um ';' extra quebraria o C.
+     * O 2º argumento é NULL porque uma atribuição não é expressão: não tem tipo
+     * para repassar. */
+
+    freeRecord($1);
+    /* Libera o record de "idade". O cat() já copiou o texto para a string nova
+     * do $$, então o original não é mais necessário. */
+
+    freeRecord($3);
+    /* Libera o record de "21", pelo mesmo motivo. */
+}
                         | cremento                                          { $$ = $1; }
                         ;
 
-cremento            : variavel OPERADOR_INCREMENTO                      {
-                        CategoriaTipo c = $1->type->categoria;
+cremento : variavel OPERADOR_INCREMENTO                      {
+    /* Exemplo usado nos comentários:   idade++;   (com 'idade' declarada como inteiro)
+     *
+     * Quando esta ação roda, o parser já reconheceu "idade++":
+     *   $1 = record de 'variavel'  -> code: "idade"  | type: T_INTEIRO
+     *   $2 = o token '++'          -> não carrega valor, por isso não é usado
+     *
+     * Aqui não há expressão do lado direito, então não existe checagem de
+     * compatibilidade entre dois tipos. O que se verifica é se a PRÓPRIA
+     * variável aceita o operador. */
 
-                        if (c != T_ERRO && c != T_INTEIRO && c != T_FLUTUANTE && c != T_DECIMAL) {
-                            printErro(ERRO_SEMANTICO, yylineno, "operador '++' exige variável numérica.");
-                        }
+    CategoriaTipo c = $1->type->categoria;
+    /* Pega só a "família" do tipo da variável, que é o que interessa aqui:
+     *   idade     -> T_INTEIRO
+     *   altura    -> T_FLUTUANTE
+     *   nome      -> T_TEXTO
+     *   z (não declarada) -> T_ERRO (a regra 'variavel' sempre devolve um tipo,
+     *                                então o ponteiro $1->type nunca é NULL) */
 
-                        $$ = createRecord(cat($1->code, "++", "", "", ""), NULL);
-                        freeRecord($1);
-                    }
-                    | variavel OPERADOR_DECREMENTO                      {
-                        CategoriaTipo c = $1->type->categoria;
+    if (c != T_ERRO && c != T_INTEIRO && c != T_FLUTUANTE && c != T_DECIMAL) {
+        /* Só entra se o tipo NÃO for numérico, e também NÃO for T_ERRO.
+         * Exemplos que entram:  nome++;  (texto)    ativo++;  (booleano)
+         * Exemplos que não entram: idade++; (inteiro)   altura++; (flutuante)
+         * O T_ERRO fica de fora de propósito: em `z++;` com 'z' inexistente, o erro
+         * "identificador z nao declarado" já foi dado em 'variavel', e aqui
+         * não sai uma segunda mensagem para a mesma linha. */
+        printErro(ERRO_SEMANTICO, yylineno, "operador '++' exige variável numérica.");
+        /* "erro semântico na linha 4: operador '++' exige variável numérica."
+         * e conta o erro. No fim, totalErros() > 0 impede a geração do C. */
+    }
 
-                        if (c != T_ERRO && c != T_INTEIRO && c != T_FLUTUANTE && c != T_DECIMAL) {
-                            printErro(ERRO_SEMANTICO, yylineno, "operador '--' exige variável numérica.");
-                        }
+    $$ = createRecord(cat($1->code, "++", "", "", ""), NULL);
+    /* Monta o código C juntando os pedaços:
+     *   "idade" + "++"   ->   "idade++"
+     * Funciona também com vetor, porque o code de 'variavel' já vem montado:
+     *   v[2]++;   ->   "v[2]++"
+     * O ';' não entra aqui: quem o acrescenta é a regra 'instrucoes'. Isso importa
+     * porque esta regra também aparece no cabeçalho do 'para'
+     * (`for (inteiro i = 0; i < 3; i++)`), onde um ';' extra quebraria o C.
+     * O 2º argumento é NULL porque `idade++;` é uma instrução, e não uma
+     * expressão com tipo para repassar. */
 
-                        $$ = createRecord(cat($1->code, "--", "", "", ""), NULL);
-                        freeRecord($1);
-                    }
+    freeRecord($1);
+    /* Libera o record de "idade". O cat() já copiou o texto para a string nova
+     * do $$, então o original não é mais necessário. */
+}
                     ;
 
 declaracao          : tipo ID                                              {   
