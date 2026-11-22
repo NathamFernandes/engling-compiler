@@ -2,6 +2,7 @@
 // libs padrão para lidar com strings e etc
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 // libs nossas para estruturas de dados, erros, etc
 #include "pilha.h"
@@ -54,7 +55,8 @@ FILE *arquivo_saida = NULL;
 %type <rec> expressaoMultiplicativa expressaoExponencial expressaoUnaria
 %type <rec> expressaoPosfixa termo sufixoId listaIndexacao
 %type <rec> listaExpressoesOpcional listaExpressoes
-%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional declaracao atribuicao
+%type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional 
+%type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -265,7 +267,7 @@ instrucoes  :                                   { $$ = createRecord(strdup(""), 
             ;
 
 instrucao   : declaracao            { $$ = $1; } 
-            | atribuicao            { $$ = createRecord(strdup(""), NULL); }
+            | atribuicao            { $$ = $1; }
             | condicionalSe         { $$ = $1; }
             | condicionalCaso       {}
             | lacoPara              {}
@@ -275,21 +277,66 @@ instrucao   : declaracao            { $$ = $1; }
             | retorno               {}
             ;
 
-atribuicao          : inicializacao       {}
-                    | apenasAtribuicao       {}
+atribuicao          : inicializacao       { $$ = $1; }
+                    | apenasAtribuicao       { $$ = $1; }
                     ;
 
-inicializacao : declaracao OPERADOR_ATRIBUICAO expressao  {}
+inicializacao : declaracao OPERADOR_ATRIBUICAO expressao  {
+                bool tiposCompativeis = tipos_compativeis($1->type, $3->type); 
+
+                if (!tiposCompativeis) {
+                    printErro(ERRO_SEMANTICO, yylineno, "Tipos incompativeis na atribuicao.");
+                }
+
+                    
+                $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+
+                freeRecord($1);
+                freeRecord($3);
+              }
                         ;
 
 variavel
-    : ID                                            {}  
+    : ID                                            {
+        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
+        Tipo *tipoDaVariavel;
+
+        if (s == NULL) {
+            printErro(ERRO_SEMANTICO, yylineno, "identificador %s nao declarado.", $1);
+            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL); 
+        }
+        else if (s->categoria == CAT_CONSTANTE) {
+            printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
+            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        }
+        else if (s->categoria != CAT_VARIAVEL) {
+            printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
+            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        }
+        else {
+            tipoDaVariavel = clonar_tipo(s->tipo);
+        }
+
+        $$ = createRecord(strdup($1), tipoDaVariavel);
+        free($1);
+    }  
     | variavel PONTO ID                             {}
     | variavel A_COLCHETE expressao F_COLCHETE      {}
     ;
 
-apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {}
-                        | cremento                                          {}
+apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {
+                    int tiposCompativeis = tipos_compativeis($1->type, $3->type);
+
+                    if (!tiposCompativeis) {
+                        printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na atribuicao.");
+                    }
+
+                    $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
+
+                    freeRecord($1);
+                    freeRecord($3);
+                 }
+                        | cremento                                          { $$ = $1; }
                         ;
 
 cremento            : variavel OPERADOR_INCREMENTO                      {}
