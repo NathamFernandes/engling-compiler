@@ -402,20 +402,20 @@ variavel
              * `z = 1;` não gera uma SEGUNDA mensagem de "tipo incompatível".
              * Um erro, uma mensagem. */
         }
-        else if (s->categoria == CAT_CONSTANTE) {
-            /* Caso: `constante inteiro MAX = 10;` e depois `MAX = 20;` */
-            printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
-            /* "erro semântico na linha 8: não é possível modificar a constante 'MAX'." */
-            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
-            /* Mesmo motivo: evita cascata de erros nesta linha. */
-        }
-        else if (s->categoria != CAT_VARIAVEL) {
-            /* Caso: o nome existe, mas é outra coisa, como uma função.
-             * Ex.: `funcao inteiro soma(...)` e depois `soma = 3;` */
-            printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
-            /* "erro semântico na linha 9: 'soma' nao é uma variavel." */
-            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
-        }
+        //else if (s->categoria == CAT_CONSTANTE) {
+        //    /* Caso: `constante inteiro MAX = 10;` e depois `MAX = 20;` */
+        //    printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
+        //    /* "erro semântico na linha 8: não é possível modificar a constante 'MAX'." */
+        //    tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        //    /* Mesmo motivo: evita cascata de erros nesta linha. */
+        //}
+        //else if (s->categoria != CAT_VARIAVEL) {
+        //    /* Caso: o nome existe, mas é outra coisa, como uma função.
+        //     * Ex.: `funcao inteiro soma(...)` e depois `soma = 3;` */
+        //    printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
+        //    /* "erro semântico na linha 9: 'soma' nao é uma variavel." */
+        //    tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        //}
         else {
             /* Caso normal: existe e é variável. Ex.: `idade = 21;` com 'idade' declarada. */
             tipoDaVariavel = clonar_tipo(s->tipo);
