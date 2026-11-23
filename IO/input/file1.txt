@@ -6,4 +6,9 @@ constante flutuante b = a;
 
 se (a > 2) {
     inteiro t = 0;
+} senaose (a > 11) {
+    inteiro t = 0;
+} senao {
+    inteiro t = 0;
 };
+
