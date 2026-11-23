@@ -29,6 +29,8 @@ extern FILE *yyin;
 // arquivo .c de saída (c simplificado)
 FILE *arquivo_saida = NULL;
 
+int struct_counter = 0;
+
 %}
 
 // acho que essa union é como uma capsula que armazena o valor atual
@@ -57,6 +59,7 @@ FILE *arquivo_saida = NULL;
 %type <rec> listaExpressoesOpcional listaExpressoes
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional 
 %type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
+%type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -225,14 +228,61 @@ declaracaoConstante : CONSTANTE tipo ID OPERADOR_ATRIBUICAO expressao {
                     ;
 
 tipoUsuario :                                           { $$ = createRecord(strdup(""), NULL); }
-            | tipoUsuario novoTipoUsuario TERMINADOR    { $$ = createRecord(strdup(""), NULL); }
+            | tipoUsuario novoTipoUsuario TERMINADOR    { 
+                // concatenação
+                char *code_tipoUsuario = cat($1->code, "", $2->code, ";\n", "");
+                // free dos não terminais
+                freeRecord($1);
+                freeRecord($2);
+                // subida record com codigo concatenado para o pai
+                $$ = createRecord(strdup(code_tipoUsuario), NULL);    
+                // free no ponteiro
+                free(code_tipoUsuario);
+             }
             ;
 
-novoTipoUsuario : TIPO A_CHAVE tipoUsuarioDeclaracoes F_CHAVE ID {}
+novoTipoUsuario : TIPO A_CHAVE {
+                    char escopo_tmp[32];
+                    sprintf(escopo_tmp, "struct_%d", struct_counter++);
+                    push(pilha_escopos, escopo_tmp);
+                  } tipoUsuarioDeclaracoes F_CHAVE ID {
+                    $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+                    pop(pilha_escopos);
+
+                    simbolo *sym_3 = buscar_simbolo(hash_table, pilha_escopos, $6);
+                          
+                    if (sym_3 != NULL) {
+                        printErro(ERRO_SEMANTICO, yylineno, "tipo '%s' já declarado na linha %d.", $6, sym_3->linha_declaracao);
+                        goto fim_novoTipoUsuario;
+                    }
+
+                    Tipo *t_usuario = criar_tipo(T_USUARIO, $6, NULL);
+                    inserir_simbolo(hash_table, pilha_escopos, $6, t_usuario, CAT_TIPO_USUARIO, yylineno);
+
+                    free($$->code);
+                    liberar_tipo($$->type);
+
+                    $$->code = cat("typedef struct {\n", $4->code, "} ", $6, "");
+                    $$->type = t_usuario;
+
+                fim_novoTipoUsuario:
+                    freeRecord($4);
+                    free($6);
+                }
                 ;
 
-tipoUsuarioDeclaracoes  : declaracao TERMINADOR 
-                        | declaracao TERMINADOR tipoUsuarioDeclaracoes  {}
+tipoUsuarioDeclaracoes  : declaracao TERMINADOR {
+                            $$ = createRecord(cat("    ", $1->code, ";\n", "", ""), NULL);
+                            freeRecord($1);
+                        }
+                        | declaracao TERMINADOR tipoUsuarioDeclaracoes {
+                            char *linha = cat("    ", $1->code, ";\n", "", "");
+                            $$ = createRecord(cat(linha, $3->code, "", "", ""), NULL);
+                            free(linha);
+                            freeRecord($1);
+                            freeRecord($3);
+                        }
                         ;
 
 subprogramas    :                                       { $$ = createRecord(strdup(""), NULL); }
@@ -352,20 +402,20 @@ variavel
              * `z = 1;` não gera uma SEGUNDA mensagem de "tipo incompatível".
              * Um erro, uma mensagem. */
         }
-        else if (s->categoria == CAT_CONSTANTE) {
-            /* Caso: `constante inteiro MAX = 10;` e depois `MAX = 20;` */
-            printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
-            /* "erro semântico na linha 8: não é possível modificar a constante 'MAX'." */
-            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
-            /* Mesmo motivo: evita cascata de erros nesta linha. */
-        }
-        else if (s->categoria != CAT_VARIAVEL) {
-            /* Caso: o nome existe, mas é outra coisa, como uma função.
-             * Ex.: `funcao inteiro soma(...)` e depois `soma = 3;` */
-            printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
-            /* "erro semântico na linha 9: 'soma' nao é uma variavel." */
-            tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
-        }
+        //else if (s->categoria == CAT_CONSTANTE) {
+        //    /* Caso: `constante inteiro MAX = 10;` e depois `MAX = 20;` */
+        //    printErro(ERRO_SEMANTICO, yylineno, "não é possível modificar a constante '%s'.", $1);
+        //    /* "erro semântico na linha 8: não é possível modificar a constante 'MAX'." */
+        //    tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        //    /* Mesmo motivo: evita cascata de erros nesta linha. */
+        //}
+        //else if (s->categoria != CAT_VARIAVEL) {
+        //    /* Caso: o nome existe, mas é outra coisa, como uma função.
+        //     * Ex.: `funcao inteiro soma(...)` e depois `soma = 3;` */
+        //    printErro(ERRO_SEMANTICO, yylineno, "'%s' nao é uma variavel.", $1);
+        //    /* "erro semântico na linha 9: 'soma' nao é uma variavel." */
+        //    tipoDaVariavel = criar_tipo(T_ERRO, NULL, NULL);
+        //}
         else {
             /* Caso normal: existe e é variável. Ex.: `idade = 21;` com 'idade' declarada. */
             tipoDaVariavel = clonar_tipo(s->tipo);
@@ -603,8 +653,8 @@ expressaoRelacional
     ;
 
 operadorRelacional
-    : OPERADOR_IGUAL                                        { $$ = strdup("="); }
-    | OPERADOR_DIFERENTE                                    { $$ = strdup("!<"); }
+    : OPERADOR_IGUAL                                        { $$ = strdup("=="); }
+    | OPERADOR_DIFERENTE                                    { $$ = strdup("!="); }
     | MENOR                                                 { $$ = strdup("<"); }
     | OPERADOR_MENOR_IGUAL                                  { $$ = strdup("<="); }
     | MAIOR                                                 { $$ = strdup(">"); }
@@ -648,35 +698,8 @@ expressaoPosfixa
     ;
 
 termo
-    : ID {
-        // se o termo for um ID, tenta buscar na tabela de simbolos. termos só podem ser
-        // usados em expressoes, ou seja, se o termo for um ID, ele TEM que ter sido de-
-        // clarado na tabela de símbolos
-        simbolo *s = buscar_simbolo(hash_table, pilha_escopos, $1);
-
-        // se não existir, é NULL, e é erro semântico.
-        if (s == NULL) {
-            // ele printa o erro
-            printErro(ERRO_SEMANTICO, yylineno, "identificador '%s' nao declarado.", $1);
-
-            // e ele sobe o record com o $$, mesmo tendo o erro. tem um motivo para não 
-            // encerrar a excução logo e sim, subir o record:
-            
-            /* basicamente a gente quer um compilador de mostre TODOS os erros semanticos 
-            q ocorreram. então se a gnt cortar a execução, pode ser q tenham outros erros
-            semanticos q ainda n foram identificados. então o erro sobe do nó em nó 
-            mostrando erros, sequencialmente (busca em profundidade) até o nó raiz, onde lá, 
-            se totalErros() > 0, ele mostra a quantidade de erros */
-            $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
-        } else {
-            // se tiver tudo certo, ele sobe o Lexema do Token ID (que é o $1), junto do 
-            // tipo dele (ver mais informações em tipo.c/.h)
-            $$ = createRecord(strdup($1), clonar_tipo(s->tipo));
-        }
-        // free no lexema
-        free($1);
-    }
-    | ID sufixoId                                           { $$ = NULL; }
+    : variavel                                              { $$ = $1; }
+    | ID A_PARENTESE listaExpressoesOpcional F_PARENTESE    { $$ = NULL; }
     | LITERAL_INTEIRO {
         char buf[32];
         sprintf(buf, "%d", $1);
@@ -804,7 +827,9 @@ int main(int argc, char **argv) {
     liberar_tabela(hash_table);
     liberar_pilha(pilha_escopos);
     fclose(yyin);
-    if (arquivo_saida) fclose(arquivo_saida);
+
+    if (arquivo_saida) 
+        fclose(arquivo_saida);
 
     return res;
 }
