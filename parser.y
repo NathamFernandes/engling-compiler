@@ -30,6 +30,10 @@ extern FILE *yyin;
 FILE *arquivo_saida = NULL;
 
 int struct_counter = 0;
+int profundidade_laco = 0;
+
+void novoEscopo(pilha *pilha, const char *prefixo);
+void fecharEscopo();
 
 %}
 
@@ -836,4 +840,16 @@ int main(int argc, char **argv) {
 int yyerror (char *msg) {
     fprintf (stderr, "%d: %s at '%s'\n", yylineno, msg, yytext);
     return 0;
+}
+
+
+void novoEscopo(pilha *pilha, const char *prefixo) {
+    char idEscopo[64];
+    sprintf(idEscopo, "%s_%d", prefixo, struct_counter);
+
+    push(pilha_escopos, idEscopo);
+}
+
+void fecharEscopo() {
+    pop(pilha_escopos);
 }
