@@ -270,28 +270,25 @@ condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pi
                     ;
 
 listaSenaoSe        :                                                                                           { $$ = createRecord(strdup(""), NULL); }
-                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE    {
+                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pilha_escopos, "bloco_senaoSe"); } instrucoes { pop(pilha_escopos); } F_CHAVE    {
                         verificarCondicaoBool($4, "senaose", yylineno);
 
-                        char *instrucaoSenaoSe = cat(" else if (", $4->code, ") {\n", $7->code, "}");
+                        char *instrucaoSenaoSe = cat(" else if (", $4->code, ") {\n", $8->code, "}");
 
                         $$ = createRecord(cat($1->code, instrucaoSenaoSe, "", "", ""), NULL);
 
                         free(instrucaoSenaoSe);
                         freeRecord($1);
                         freeRecord($4);
-                        freeRecord($7);
+                        freeRecord($8);
                     }
                     ;
 
 senaoOpcional       :                                       { $$ = createRecord(strdup(""), NULL); }
-                    | SENAO_TOK A_CHAVE instrucoes F_CHAVE  {
-                        char *instrucaoSenao = cat(" senao {\n", $3->code, "}", "", "");
+                    | SENAO_TOK A_CHAVE { push(pilha_escopos, "bloco_senao"); } instrucoes { pop(pilha_escopos); } F_CHAVE  {
+                        $$ = createRecord(cat(" else {\n", $4->code, "}", "", ""), NULL);
 
-                        $$ = createRecord(instrucaoSenao, NULL);
-
-                        free(instrucaoSenao);
-                        freeRecord($3);
+                        freeRecord($4);
                     }
                     ;
 
