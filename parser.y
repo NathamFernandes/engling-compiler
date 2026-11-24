@@ -64,6 +64,7 @@ void fecharEscopo();
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional 
 %type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
 %type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
+%type <rec> lacoEnquanto controle
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -325,7 +326,7 @@ instrucao   : declaracao            { $$ = $1; }
             | condicionalSe         { $$ = $1; }
             | condicionalCaso       {}
             | lacoPara              {}
-            | lacoEnquanto          {}
+            | lacoEnquanto          { $$ = $1; }
             | chamadaSubprograma    {}
             | controle              {}
             | retorno               {}
@@ -613,7 +614,18 @@ listaCasos          :                                                       {}
 lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
                     ;
 
-lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto"); } instrucoes { fecharEscopo(); } F_CHAVE {
+                        bool condicaoValida = verificarCondicaoBool($3, "enquanto", yylineno);
+
+                        if (!condicaoValida) {
+                            printErro(ERRO_SEMANTICO, yylineno, "Argumento não corresponde a uma expressao booleana.");
+                        }
+
+                        $$ = createRecord(cat("while (", $3->code, ") {\n", $7->code, "}"), NULL);
+
+                        freeRecord($3);
+                        freeRecord($7);
+                    }
                     ;
 
 chamadaSubprograma  : ID A_PARENTESE parametrosChamada F_PARENTESE {}
