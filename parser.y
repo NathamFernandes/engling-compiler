@@ -34,7 +34,7 @@ int profundidade_laco = 0;
 int id_labels = 0;
 
 void novoEscopo(pilha *pilha, const char *prefixo, int *contador);
-void fecharEscopo(int *contador);
+void fecharEscopo();
 
 %}
 
@@ -615,7 +615,7 @@ listaCasos          :                                                       {}
 lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
                     ;
 
-lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto", &profundidade_laco); } instrucoes { fecharEscopo(&profundidade_laco); } F_CHAVE {
+lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto", &profundidade_laco); } instrucoes { fecharEscopo(); } F_CHAVE {
                         bool condicaoValida = verificarCondicaoBool($3, "enquanto", yylineno);
 
                         if (!condicaoValida) {
@@ -625,9 +625,9 @@ lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { n
                         char lacoId[32];
                         sprintf(lacoId, "%d", profundidade_laco);
 
-                        char *p1 = cat("inicio_enquanto_", lacoId, ": \n if (!(", $3->code, ")) goto fim_enquanto_");
-                        char *p2 = cat(p1, lacoId, ";\n { \n", $7->code, "}\n");
-                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\n fim_enquanto_", lacoId, ": ;");
+                        char *p1 = cat("inicio_enquanto_", lacoId, ":\nif (!(", $3->code, ")) goto fim_enquanto_");
+                        char *p2 = cat(p1, lacoId, ";\n", $7->code, "\n");
+                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\nfim_enquanto_", lacoId, ": ;");
 
                         $$ = createRecord(cat(p2, p3, "", "", ""), NULL);
                         //$$ = createRecord(cat("while (", $3->code, ") {\n", $7->code, "}"), NULL);
@@ -874,7 +874,6 @@ void novoEscopo(pilha *pilha, const char *prefixo, int *contador) {
     push(pilha_escopos, idEscopo);
 }
 
-void fecharEscopo(int *contador) {
+void fecharEscopo() {
     pop(pilha_escopos);
-    (*contador)--;
 }
