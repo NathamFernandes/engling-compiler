@@ -32,8 +32,8 @@ FILE *arquivo_saida = NULL;
 int struct_counter = 0;
 int profundidade_laco = 0;
 
-void novoEscopo(pilha *pilha, const char *prefixo);
-void fecharEscopo();
+void novoEscopo(pilha *pilha, const char *prefixo, int *contador);
+void fecharEscopo(int *contador);
 
 %}
 
@@ -614,7 +614,7 @@ listaCasos          :                                                       {}
 lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
                     ;
 
-lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto"); } instrucoes { fecharEscopo(); } F_CHAVE {
+lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto", &profundidade_laco); } instrucoes { fecharEscopo(&profundidade_laco); } F_CHAVE {
                         bool condicaoValida = verificarCondicaoBool($3, "enquanto", yylineno);
 
                         if (!condicaoValida) {
@@ -855,13 +855,14 @@ int yyerror (char *msg) {
 }
 
 
-void novoEscopo(pilha *pilha, const char *prefixo) {
+void novoEscopo(pilha *pilha, const char *prefixo, int *contador) {
     char idEscopo[64];
-    sprintf(idEscopo, "%s_%d", prefixo, struct_counter);
+    sprintf(idEscopo, "%s_%d", prefixo, ++(*contador));
 
     push(pilha_escopos, idEscopo);
 }
 
-void fecharEscopo() {
+void fecharEscopo(int *contador) {
     pop(pilha_escopos);
+    (*contador)--;
 }
