@@ -4,6 +4,10 @@ constante flutuante b = a;
 //constante inteiro a = 5;       
 //constante inteiro z = d;
 
+inteiro counter1 = 0;
+inteiro counter2 = 0;
+inteiro counter3 = 0;
+
 se (a > 2) {
     inteiro t = 0;
 } senaose (a > 11) {
@@ -12,7 +16,18 @@ se (a > 2) {
     inteiro r = 0;
 };
 
-enquanto (a) {
-    inteiro o = 0;
-    break;
+enquanto (counter1 < 10) {
+    texto nome = "seuNome";
+
+    counter1++;
+
+    enquanto (counter2 < 10) {
+        counter2++;
+    };
 };
+
+
+enquanto (counter3 < 10) {
+    counter3++;
+};
+
