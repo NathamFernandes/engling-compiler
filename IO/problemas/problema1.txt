@@ -1,0 +1,7 @@
+inteiro c = 10;
+decimal x = 5.5;
+decimal y = 5.2;
+
+decimal final = x^2 - y + c;
+
+// saida(final);

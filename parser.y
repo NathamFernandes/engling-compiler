@@ -125,7 +125,7 @@ programa    : cabecalho subprogramas instrucoes {
                 // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
                     // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
-                    char *temp_final = cat($1->code, "\n", $2->code, "\n", "");
+                    char *temp_final = cat("#include <stdio.h>\n", $1->code, "\n", $2->code, "\n");
                     char *codigo_final = cat(temp_final, "int main() {\n", $3->code, "};", "");
                     // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
                     // se for null, ai só faz um printf no console mesmo do C simplificado
@@ -477,7 +477,7 @@ apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {
 
     $$ = createRecord(cat($1->code, " = ", $3->code, "", ""), NULL);
     /* Monta o código C juntando os pedaços:
-     *   "idade" + " = " + "21"   ->   "idade = 21"
+     *   "idade" + " = " + "2   1"   ->   "idade = 21"
      * Funciona também com vetor, porque o code de 'variavel' já vem montado:
      *   v[2] = 7;   ->   "v[2] = 7"
      * O ';' não entra aqui: quem o acrescenta é a regra 'instrucoes'. Isso é
@@ -688,8 +688,46 @@ operadorRelacional
 
 expressaoAditiva
     : expressaoMultiplicativa                               { $$ = $1; }
-    | expressaoAditiva OPERADOR_SOMA expressaoMultiplicativa      { $$ = NULL; }
-    | expressaoAditiva OPERADOR_SUBTRACAO expressaoMultiplicativa { $$ = NULL; }
+    | expressaoAditiva OPERADOR_SOMA expressaoMultiplicativa      
+    { 
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if(!tipos_compativeis($1->type, $3->type)) {
+            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            // se tiver erro, vai pro GOTO fim_declaracaoConstante
+            goto fim_expressaoAditiva;
+        }
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        $$->code = cat($1->code, " + ", $3->code, "", "");
+        $$->type = clonar_tipo($1->type);
+
+    fim_expressaoAditiva:
+        freeRecord($1);
+        freeRecord($3);
+    }
+    | expressaoAditiva OPERADOR_SUBTRACAO expressaoMultiplicativa 
+    {
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if(!tipos_compativeis($1->type, $3->type)) {
+            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            // se tiver erro, vai pro GOTO fim_declaracaoConstante
+            goto fimExpressaoSubtracao;
+        }
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        $$->code = cat($1->code, " - ", $3->code, "", "");
+        $$->type = clonar_tipo($1->type);
+
+    fimExpressaoSubtracao:
+        freeRecord($1);
+        freeRecord($3);
+    }
     ;
 
 expressaoMultiplicativa
@@ -701,7 +739,26 @@ expressaoMultiplicativa
 
 expressaoExponencial
     : expressaoUnaria                                       { $$ = $1; }
-    | expressaoUnaria OPERADOR_EXPONENCIACAO expressaoExponencial { $$ = NULL; }
+    | expressaoUnaria OPERADOR_EXPONENCIACAO expressaoExponencial 
+    { 
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if(!tipos_compativeis($1->type, $3->type)) {
+            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            // se tiver erro, vai pro GOTO fim_declaracaoConstante
+            goto fim_expressaoExponencial;
+        }
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        $$->code = cat($1->code, " ** ", $3->code, "", "");
+        $$->type = clonar_tipo($1->type);
+
+    fim_expressaoExponencial:
+        freeRecord($1);
+        freeRecord($3);
+    }
     ;
 
 expressaoUnaria

@@ -6,7 +6,4 @@ tipo {
     inteiro b;
 } MeuTipo;
 
-se (x > 10) {
-    inteiro y = 10;
-    y++;
-};
+inteiro a = 10 + 20;
