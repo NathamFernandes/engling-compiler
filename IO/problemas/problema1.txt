@@ -1,7 +1,11 @@
-inteiro c = 10;
-decimal x = 5.5;
-decimal y = 5.2;
+inteiro c;
+flutuante x;
+flutuante y;
 
-decimal final = x^2 - y + c;
+saida("insira os valores: \n");
+
+entrada(c, x, y);
+
+flutuante final = x^2 - y + c;
 
 saida(final);

@@ -12,7 +12,6 @@
 #include "tipos.h"
 #include "semantica.h"
 
-
 // declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
 HashTable *hash_table;

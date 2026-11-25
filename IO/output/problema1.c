@@ -4,9 +4,11 @@
 
 
 int main() {
-int c = 10;
-double x = 5.500000;
-double y = 5.200000;
-double final = pow(x, 2) - y + c;
-printf("%lf", final);
+int c;
+float x;
+float y;
+printf("%s", "insira os valores: \n");
+scanf("%d%f%f", &c, &x, &y);
+float final = pow(x, 2) - y + c;
+printf("%f", final);
 };

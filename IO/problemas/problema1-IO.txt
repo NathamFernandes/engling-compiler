@@ -1,9 +1,0 @@
-inteiro c;
-flutuante x;
-flutuante y;
-
-entrada(c, x, y);
-
-flutuante final = x^2 - y + c;
-
-saida(final);
