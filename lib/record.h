@@ -6,6 +6,8 @@
 typedef struct record {
     char *code;
     Tipo *type;
+    char *formato;
+    char *args_end;
 } record;
 
 record *createRecord(char *code, Tipo *type);

@@ -42,6 +42,9 @@ ID          {CARACTER}({CARACTER}|{DIGITO})*
 "texto"                     { return TIPO_TEXTO; }
 "booleano"                  { return TIPO_BOOLEANO; }
 
+"saida"                     { return SAIDA; }
+"entrada"                   { return ENTRADA; }
+
 "vetor"                     { return TIPO_VETOR; }
 "fila"                      { return TIPO_FILA; }
 "pilha"                     { return TIPO_PILHA; }

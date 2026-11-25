@@ -36,6 +36,19 @@ int id_labels = 0;
 void novoEscopo(pilha *pilha, const char *prefixo, int *contador);
 void fecharEscopo(int *contador);
 
+char* especificador_tipo(Tipo *t) {
+    if (!t) return "";
+    switch (t->categoria) {
+        case T_INTEIRO:
+        case T_BOOLEANO:  return "%d";
+        case T_FLUTUANTE: return "%f";
+        case T_DECIMAL:   return "%lf";
+        case T_CARACTER:  return "%c";
+        case T_TEXTO:     return "%s";
+        default:          return "";
+    }
+}
+
 %}
 
 // acho que essa union é como uma capsula que armazena o valor atual
@@ -66,13 +79,14 @@ void fecharEscopo(int *contador);
 %type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
 %type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
 %type <rec> lacoEnquanto controle
+%type <rec> parametrosChamada chamadaSubprograma
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
 
 // declaração de tokens usados em declaracoes
 %token TIPO             CONSTANTE       FUNCAO
-%token PROCEDIMENTO     NOVO
+%token PROCEDIMENTO     NOVO    SAIDA   ENTRADA
 
 // declaração de tokens de tipos primitivos
 %token TIPO_INTEIRO     TIPO_CARACTER   TIPO_FLUTUANTE
@@ -125,7 +139,7 @@ programa    : cabecalho subprogramas instrucoes {
                 // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
                     // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
-                    char *temp_final = cat("#include <stdio.h>\n", $1->code, "\n", $2->code, "\n");
+                    char *temp_final = cat("#include <stdio.h>\n#include <math.h>\n", $1->code, "\n", $2->code, "\n");
                     char *codigo_final = cat(temp_final, "int main() {\n", $3->code, "};", "");
                     // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
                     // se for null, ai só faz um printf no console mesmo do C simplificado
@@ -309,10 +323,47 @@ parametros      :                                           {}
                 | tipo ID VIRGULA parametros                {}
                 ;
 
-parametrosChamada           :                               {}
-                            | expressao                         {}
-                            | expressao VIRGULA parametrosChamada   {}
-                            ;
+parametrosChamada
+    : /* vazio */ {
+        $$ = createRecord(strdup(""), NULL);
+        $$->formato = strdup("");
+        $$->args_end = strdup("");
+    }
+    | expressao {
+        const char *esp = especificador_tipo($1->type);
+
+        if ($1->type->categoria != T_ERRO && strlen(esp) == 0) {
+            printErro(ERRO_SEMANTICO, yylineno, "tipo invalido para entrada/saida.");
+        }
+
+        $$ = createRecord(strdup($1->code), NULL);
+        $$->formato = strdup(esp);
+        $$->args_end = ($1->type->categoria == T_TEXTO)
+                       ? strdup($1->code)
+                       : cat("&", $1->code, "", "", "");
+
+        freeRecord($1);
+    }
+    | expressao VIRGULA parametrosChamada {
+        char *esp = especificador_tipo($1->type);
+
+        if ($1->type->categoria != T_ERRO && strlen(esp) == 0) {
+            printErro(ERRO_SEMANTICO, yylineno, "tipo invalido para entrada/saida.");
+        }
+
+        char *arg_atual_s = ($1->type->categoria == T_TEXTO)
+                            ? strdup($1->code)
+                            : cat("&", $1->code, "", "", "");
+
+        $$ = createRecord(cat($1->code, ", ", $3->code, "", ""), NULL);
+        $$->formato = cat(esp, $3->formato, "", "", "");
+        $$->args_end = cat(arg_atual_s, ", ", $3->args_end, "", "");
+
+        free(arg_atual_s);
+        freeRecord($1);
+        freeRecord($3);
+    }
+    ;
 
 instrucoes  :                                   { $$ = createRecord(strdup(""), NULL); }
             | instrucao TERMINADOR instrucoes   { 
@@ -328,7 +379,7 @@ instrucao   : declaracao            { $$ = $1; }
             | condicionalCaso       {}
             | lacoPara              {}
             | lacoEnquanto          { $$ = $1; }
-            | chamadaSubprograma    {}
+            | chamadaSubprograma    { $$ = $1; }
             | controle              {}
             | retorno               {}
             ;
@@ -640,8 +691,33 @@ lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { n
                     }
                     ;
 
-chamadaSubprograma  : ID A_PARENTESE parametrosChamada F_PARENTESE {}
-                    ;
+chamadaSubprograma
+    : ID A_PARENTESE parametrosChamada F_PARENTESE {
+        $$ = createRecord(strdup(""), NULL);
+        freeRecord($3);
+    }
+    | SAIDA A_PARENTESE parametrosChamada F_PARENTESE {
+        if (strlen($3->code) == 0) {
+            $$ = createRecord(strdup("printf(\"\")"), NULL);
+        } else {
+            // Gera: printf("%s%d", "Idade: ", idade)
+            char *cod = cat("printf(\"", $3->formato, "\", ", $3->code, ")");
+            $$ = createRecord(cod, NULL);
+        }
+        freeRecord($3);
+    }
+    | ENTRADA A_PARENTESE parametrosChamada F_PARENTESE {
+        if (strlen($3->code) == 0) {
+            printErro(ERRO_SEMANTICO, yylineno, "'entrada' exige pelo menos uma variavel.");
+            $$ = createRecord(strdup(""), NULL);
+        } else {
+            // Gera: scanf("%d%f", &idade, &altura)
+            char *cod = cat("scanf(\"", $3->formato, "\", ", $3->args_end, ")");
+            $$ = createRecord(cod, NULL);
+        }
+        freeRecord($3);
+    }
+    ;
 
 controle            : PARE_TOK      {} 
                     | CONTINUE_TOK  {}
@@ -752,7 +828,7 @@ expressaoExponencial
         free($$->code);
         liberar_tipo($$->type);
 
-        $$->code = cat($1->code, " ** ", $3->code, "", "");
+        $$->code = cat("pow(", $1->code, ", ", $3->code, ")");
         $$->type = clonar_tipo($1->type);
 
     fim_expressaoExponencial:

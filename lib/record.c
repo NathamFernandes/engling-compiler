@@ -8,6 +8,8 @@ record *createRecord(char *code, Tipo *type) {
     if (rec != NULL) {
         rec->code = code;
         rec->type = type;
+        rec->formato = NULL;
+        rec->args_end = NULL;
     }
     return rec;
 }
@@ -16,6 +18,10 @@ void freeRecord(record *rec) {
     if (rec == NULL) return;
     free(rec->code);
     liberar_tipo(rec->type);
+
+    if (rec->formato != NULL) free(rec->formato);
+    if (rec->args_end != NULL) free(rec->args_end);
+    
     free(rec);
 }
 
