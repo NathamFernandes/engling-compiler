@@ -769,7 +769,7 @@ expressaoAditiva
         $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
 
         if(!tipos_compativeis($1->type, $3->type)) {
-            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            printErro(ERRO_SEMANTICO, yylineno, "tipos incompatíveis na operação de soma.");
             // se tiver erro, vai pro GOTO fim_declaracaoConstante
             goto fim_expressaoAditiva;
         }
@@ -789,7 +789,7 @@ expressaoAditiva
         $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
 
         if(!tipos_compativeis($1->type, $3->type)) {
-            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            printErro(ERRO_SEMANTICO, yylineno, "tipos incompatíveis na operação de subtração.");
             // se tiver erro, vai pro GOTO fim_declaracaoConstante
             goto fimExpressaoSubtracao;
         }
@@ -820,7 +820,7 @@ expressaoExponencial
         $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
 
         if(!tipos_compativeis($1->type, $3->type)) {
-            printErro(ERRO_SEMANTICO, yylineno, "tipo incompativel na declaração da constante '%s'.", $3);
+            printErro(ERRO_SEMANTICO, yylineno, "tipos incompatíveis na operação de exponenciação.");
             // se tiver erro, vai pro GOTO fim_declaracaoConstante
             goto fim_expressaoExponencial;
         }
