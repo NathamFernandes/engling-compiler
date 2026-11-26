@@ -612,6 +612,20 @@ cremento : variavel OPERADOR_INCREMENTO                      {
     /* Libera o record de "idade". O cat() já copiou o texto para a string nova
      * do $$, então o original não é mais necessário. */
 }
+
+                    |
+                    variavel OPERADOR_DECREMENTO 
+                    {
+                        CategoriaTipo c = $1->type->categoria;
+
+                        if (c != T_ERRO && c != T_INTEIRO && c != T_FLUTUANTE && c != T_DECIMAL) {
+                            printErro(ERRO_SEMANTICO, yylineno, "operador '++' exige variável numérica.");
+                        }
+
+                        $$ = createRecord(cat($1->code, "--", "", "", ""), NULL);
+
+                        freeRecord($1);
+                    }
                     ;
 
 declaracao          : tipo ID                                              {   
