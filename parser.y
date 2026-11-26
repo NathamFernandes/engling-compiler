@@ -13,6 +13,7 @@
 #include "semantica.h"
 
 #define MAX_LACO 64
+#define MAX_SE 64
 
 // declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
@@ -38,6 +39,16 @@ typedef struct {
 } ControleLaco;
 
 ControleLaco lacos;
+
+// Struct para gerenciar condicionais
+typedef struct {
+    int id;             // Atribui identificador unico a um condicional.
+    int ids[MAX_SE];    // Pilha de Identificadores de condicionais se abertos
+    int ramos[MAX_SE];  // Identificador do proximo ramo condicional de cada 'se' aberto.
+    int topo;           // Retorna o id do condicional mais interno.
+} ControleCondicional;
+
+ControleCondicional cond; 
 
 int struct_counter = 0;
 
@@ -627,42 +638,126 @@ declaracao          : tipo ID                                              {
                     } 
                     ;
 
-condicionalSe       : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pilha_escopos, "bloco_se"); } instrucoes { pop(pilha_escopos); } F_CHAVE listaSenaoSe senaoOpcional {
-                            verificarCondicaoBool($3, "se", yylineno);
+condicionalSe : SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE
+                {
+                    // Ação 6: roda logo depois da "{"
+                    int condId = novoEscopo(pilha_escopos, "bloco_se", &cond.id);
 
-                            char *instrucaoIf = cat("if (", $3->code, ") {\n", $7->code, "}");
+                    cond.ids[cond.topo]   = condId;
+                    cond.ramos[cond.topo] = 1;      // o ramo 0 é este; o próximo será o 1
+                    cond.topo++;
 
-                            $$ = createRecord(cat(instrucaoIf, "", $10->code, $11->code, ""), NULL);
+                    $<iValue>$ = condId;            // lido na ação final como $<iValue>6
+                }
+                instrucoes
+                {
+                    pop(pilha_escopos);
+                }
+                F_CHAVE listaSenaoSe senaoOpcional
+                {
+                    // SE_TOK(1) A_PARENTESE(2) expressao(3) F_PARENTESE(4) A_CHAVE(5)
+                    // ação(6) instrucoes(7) ação(8) F_CHAVE(9) listaSenaoSe(10) senaoOpcional(11)
+                    int id = $<iValue>6;
+                    char strId[16];
+                    sprintf(strId, "%d", id);
 
-                            free(instrucaoIf);
-                            freeRecord($3);
-                            freeRecord($7);
-                            freeRecord($10);
-                            freeRecord($11);
-                    } 
+                    verificarCondicaoBool($3, "se", yylineno);
+
+                    // if (!(cond)) goto se_N_1;
+                    // {
+                    // <corpo>}
+                    // goto fim_se_N;
+                    // se_N_1: ;
+                    // <senaose...> <senao>
+                    // fim_se_N: ;
+                    char *p1 = cat("if (!(", $3->code, ")) goto se_", strId, "_1;\n{\n");
+                    char *p2 = cat(p1, $7->code, "}\ngoto fim_se_", strId, ";\nse_");
+                    char *p3 = cat(p2, strId, "_1: ;\n", $10->code, $11->code);
+
+                    $$ = createRecord(cat(p3, "fim_se_", strId, ": ;", ""), NULL);
+
+                    free(p1);
+                    free(p2);
+                    free(p3);
+                    freeRecord($3);     // condição
+                    freeRecord($7);     // corpo
+                    freeRecord($10);    // lista de senaose
+                    freeRecord($11);    // senao opcional
+
+                    cond.topo--;        // este se terminou
+                }
+              ;
                     ;
 
-listaSenaoSe        :                                                                                           { $$ = createRecord(strdup(""), NULL); }
-                    | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { push(pilha_escopos, "bloco_senaoSe"); } instrucoes { pop(pilha_escopos); } F_CHAVE    {
-                        verificarCondicaoBool($4, "senaose", yylineno);
+listaSenaoSe  :                                  { $$ = createRecord(strdup(""), NULL); }
+              | listaSenaoSe SENAO_SE_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE
+                {
+                    // Ação 7: pega o índice DESTE ramo e abre o escopo dele
+                    int k = cond.ramos[cond.topo - 1]++;     // usa o valor e avança o contador
 
-                        char *instrucaoSenaoSe = cat(" else if (", $4->code, ") {\n", $8->code, "}");
+                    char nome[32];
+                    sprintf(nome, "se_%d_%d", cond.ids[cond.topo - 1], k);
+                    push(pilha_escopos, nome);               // sem novoEscopo: ele mexeria em cond.id
 
-                        $$ = createRecord(cat($1->code, instrucaoSenaoSe, "", "", ""), NULL);
+                    $<iValue>$ = k;                          // lido na ação final como $<iValue>7
+                }
+                instrucoes
+                {
+                    pop(pilha_escopos);
+                }
+                F_CHAVE
+                {
+                    // listaSenaoSe(1) SENAO_SE_TOK(2) A_PARENTESE(3) expressao(4)
+                    // F_PARENTESE(5) A_CHAVE(6) ação(7) instrucoes(8) ação(9) F_CHAVE(10)
+                    int k = $<iValue>7;
+                    char strId[16], strProx[16];
+                    sprintf(strId, "%d", cond.ids[cond.topo - 1]);   // id do se que me contém
+                    sprintf(strProx, "%d", k + 1);                   // índice do próximo ramo
 
-                        free(instrucaoSenaoSe);
-                        freeRecord($1);
-                        freeRecord($4);
-                        freeRecord($8);
-                    }
+                    verificarCondicaoBool($4, "senaose", yylineno);
+
+                    // if (!(cond)) goto se_N_K+1;
+                    // {
+                    // <corpo>}
+                    // goto fim_se_N;
+                    // se_N_K+1: ;
+                    char *p1 = cat("if (!(", $4->code, ")) goto se_", strId, "_");
+                    char *p2 = cat(p1, strProx, ";\n{\n", $8->code, "}\ngoto fim_se_");
+                    char *p3 = cat(p2, strId, ";\nse_", strId, "_");
+                    char *p4 = cat(p3, strProx, ": ;\n", "", "");
+
+                    $$ = createRecord(cat($1->code, p4, "", "", ""), NULL);
+
+                    free(p1);
+                    free(p2);
+                    free(p3);
+                    free(p4);
+                    freeRecord($1);     // ramos anteriores
+                    freeRecord($4);     // condição
+                    freeRecord($8);     // corpo
+                }
+              ;
                     ;
 
-senaoOpcional       :                                       { $$ = createRecord(strdup(""), NULL); }
-                    | SENAO_TOK A_CHAVE { push(pilha_escopos, "bloco_senao"); } instrucoes { pop(pilha_escopos); } F_CHAVE  {
-                        $$ = createRecord(cat(" else {\n", $4->code, "}", "", ""), NULL);
-
-                        freeRecord($4);
-                    }
+senaoOpcional :                                  { $$ = createRecord(strdup(""), NULL); }
+              | SENAO_TOK A_CHAVE
+                {
+                    char nome[32];
+                    sprintf(nome, "senao_%d", cond.ids[cond.topo - 1]);
+                    push(pilha_escopos, nome);
+                }
+                instrucoes
+                {
+                    pop(pilha_escopos);
+                }
+                F_CHAVE
+                {
+                    // SENAO_TOK(1) A_CHAVE(2) ação(3) instrucoes(4) ação(5) F_CHAVE(6)
+                    // Sem teste e sem goto: o label do ramo anterior já cai aqui.
+                    $$ = createRecord(cat("{\n", $4->code, "}\n", "", ""), NULL);
+                    freeRecord($4);
+                }
+              ;
                     ;
 
 condicionalCaso     : ESCOLHA_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE listaCasos PADRAO_TOK DOIS_PONTOS instrucoes F_CHAVE {} ;

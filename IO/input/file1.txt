@@ -1,6 +1,53 @@
-inteiro i = 0;
+constante inteiro LIMITE = 5;
+constante booleano DEBUG = Falso;
 
-enquanto (i < 10) {
-    saida("i: ", i, "\n");
+tipo {
+    inteiro x;
+    inteiro y;
+} Ponto;
+
+Ponto origem;
+inteiro i = 0;
+inteiro validos = 0;
+inteiro nota = 7;
+booleano achou = Falso;
+
+/* escolhe o ramo conforme a nota */
+se (nota > 8) {
+    validos = 3;
+} senaose (nota == 7) {
+    validos = 2;
+} senao {
+    validos = 1;
+};
+
+se (DEBUG) {
+    validos = 0;
+};
+
+enquanto (i < LIMITE) {
     i++;
+    se (i == 2) {
+        continue;
+    };
+    se (i == 4) {
+        achou = Verdadeiro;
+        pare;
+    };
+};
+
+para (inteiro j = 0; j < 3; j++) {
+    validos++;
+};
+
+para (inteiro j = 0; j < 3; j++) {
+    inteiro dobro = 0;
+    enquanto (dobro < 2) {
+        dobro++;
+        validos++;
+    };
+};
+
+se (achou) {
+    nota = 9;
 };
