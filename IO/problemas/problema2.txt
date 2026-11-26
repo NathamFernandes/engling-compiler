@@ -1,17 +1,27 @@
-inteiro numero = 0;
+inteiro numero;
 
 inteiro intervalo_0_25 = 0;
 inteiro intervalo_26_50 = 0;
 inteiro intervalo_51_75 = 0;
 inteiro intervalo_76_100 = 0;
 
-inteiro total = 0;
-
 entrada(numero);
 
 enquanto (numero >= 0) {
+    se (A) {
+        intervalo_0_25++;
+    } senaose (B) {
+        intervalo_26_50++;
+    } senaose (C) {
+        intervalo_51_75++;
+    } senaose (76 <= numero && numero <= 100) {
+        intervalo_76_100++;
+    };
 
+    entrada(numero);
 };
+
+inteiro total = intervalo_0_25 + intervalo_26_50 + intervalo_51_75 + intervalo_76_100;
 
 saida("Total de números lidos: ", total, "\n");
 saida("Total de números no intervalo [0, 25]: ", intervalo_0_25, "\n");

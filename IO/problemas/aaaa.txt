@@ -1,0 +1,20 @@
+if (!A) {
+    goto cond_B;
+}
+
+int_A++;
+goto finalSe;
+
+cond_B:
+if (!B) {
+    goto else;
+}
+
+int_B++;
+goto finalSe;
+
+
+else:
+
+finalSe:
+entrada();

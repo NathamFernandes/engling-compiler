@@ -388,8 +388,6 @@ instrucao   : declaracao            { $$ = $1; }
             | lacoEnquanto          { $$ = $1; }
             | chamadaSubprograma    { $$ = $1; }
             | controle              {}
-            | chamadaSubprograma    {}
-            | controle              { $$ = $1; }
             | retorno               {}
             ;
 
@@ -830,7 +828,13 @@ expressao
     
 expressaoLogicaE
     : expressaoRelacional                                   { $$ = $1; }
-    | expressaoLogicaE OPERADOR_E expressaoRelacional       { $$ = NULL; }
+    | expressaoLogicaE OPERADOR_E expressaoRelacional       
+    { 
+        $$ = createRecord(cat($1->code, " && ", $3->code, "", ""), criar_tipo(T_BOOLEANO, NULL, NULL));
+
+        freeRecord($1);
+        freeRecord($3);
+    }
     ;
 
 expressaoRelacional
