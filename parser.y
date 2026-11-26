@@ -387,7 +387,6 @@ instrucao   : declaracao            { $$ = $1; }
             | lacoPara              { $$ = $1; }
             | lacoEnquanto          { $$ = $1; }
             | chamadaSubprograma    { $$ = $1; }
-            | controle              {}
             | chamadaSubprograma    {}
             | controle              { $$ = $1; }
             | retorno               {}
@@ -715,10 +714,10 @@ lacoPara            : PARA_TOK A_PARENTESE
                          * goto inicio_1;
                          * fim_1: ;
                          * }                                                          */
-                        char *p1 = cat("{\n", $4->code, ";\ninicio_", num, ": ;\nif (!(");
-                        char *p2 = cat(p1, $6->code, ")) goto fim_", num, ";\n{\n");
+                        char *p1 = cat("{\n", $4->code, ";\ninicio_loop_", num, ": ;\nif (!(");
+                        char *p2 = cat(p1, $6->code, ")) goto fim_loop_", num, ";\n{\n");
                         char *p3 = cat(p2, $12->code, "}\ncontinuar_", num, ":\n");
-                        char *p4 = cat(p3, $8->code, ";\ngoto inicio_", num, ";\nfim_");
+                        char *p4 = cat(p3, $8->code, ";\ngoto inicio_loop_", num, ";\nfim_loop_");
 
                         $$ = createRecord(cat(p4, num, ": ;\n}", "", ""), NULL);
 
@@ -803,7 +802,7 @@ controle            : PARE_TOK      {
                         }
                         else {
                             char buf[32];
-                            sprintf(buf, "goto fim_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            sprintf(buf, "goto fim_loop_%d", lacos.ids[lacos.topo - 1]);
                             $$ = createRecord(strdup(buf), NULL);
                         }
                     } 
@@ -814,7 +813,7 @@ controle            : PARE_TOK      {
                         }
                         else {
                             char buf[32];
-                            sprintf(buf, "goto inicio_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            sprintf(buf, "goto inicio_loop_%d", lacos.ids[lacos.topo - 1]);
                             $$ = createRecord(strdup(buf), NULL);
                         }
                     }
