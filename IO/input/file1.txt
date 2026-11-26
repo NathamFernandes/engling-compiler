@@ -1,15 +1,33 @@
-inteiro total = 0;
+constante inteiro a = 10;
+constante flutuante b = a;
+//constante inteiro c = "texto"; 
+//constante inteiro a = 5;       
+//constante inteiro z = d;
 
-para (inteiro i = 0; i < 5; i++) {
-    se (i == 1) {
-        continue;
-    };
-    se (i == 3) {
-        pare;
-    };
-    total++;
+inteiro counter1 = 0;
+inteiro counter2 = 0;
+inteiro counter3 = 0;
+
+se (a > 2) {
+    inteiro t = 0;
+} senaose (a > 11) {
+    inteiro s = 0;
+} senao {
+    inteiro r = 0;
 };
 
-para (inteiro i = 0; i < 2; i++) {
-    total++;
+enquanto (counter1 < 10) {
+    texto nome = "seuNome";
+
+    counter1++;
+
+    enquanto (counter2 < 10) {
+        counter2++;
+    };
 };
+
+
+enquanto (counter3 < 10) {
+    counter3++;
+};
+

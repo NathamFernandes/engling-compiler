@@ -753,9 +753,9 @@ lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE
                         char lacoId[32];
                         sprintf(lacoId, "%d", id);
 
-                        char *p1 = cat("inicio_enquanto_", lacoId, ":\nif (!(", $3->code, ")) goto fim_enquanto_");
+                        char *p1 = cat("inicio_loop_", lacoId, ":\nif (!(", $3->code, ")) goto fim_loop_");
                         char *p2 = cat(p1, lacoId, ";\n", $7->code, "\n");
-                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\nfim_enquanto_", lacoId, ": ;");
+                        char *p3 = cat("goto inicio_loop_", lacoId, ";\nfim_loop_", lacoId, ": ;");
 
                         $$ = createRecord(cat(p2, p3, "", "", ""), NULL);
 
