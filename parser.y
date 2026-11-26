@@ -30,6 +30,7 @@ extern FILE *yyin;
 // arquivo .c de saída (c simplificado)
 FILE *arquivo_saida = NULL;
 
+// Struct para gerenciar escopos de loops
 typedef struct {
     int id;                 // Atribui identificador unico ao label do laço.
     int ids[MAX_LACO];      // Identificadores dos laços abertos (o id to topo é o id do laço mais interno em um aninhamento).
@@ -387,7 +388,7 @@ instrucao   : declaracao            { $$ = $1; }
             | lacoPara              { $$ = $1; }
             | lacoEnquanto          { $$ = $1; }
             | chamadaSubprograma    { $$ = $1; }
-            | controle              {}
+            | controle              { $$ = $1; }
             | retorno               {}
             ;
 
@@ -713,10 +714,10 @@ lacoPara            : PARA_TOK A_PARENTESE
                          * goto inicio_1;
                          * fim_1: ;
                          * }                                                          */
-                        char *p1 = cat("{\n", $4->code, ";\ninicio_", num, ": ;\nif (!(");
-                        char *p2 = cat(p1, $6->code, ")) goto fim_", num, ";\n{\n");
+                        char *p1 = cat("{\n", $4->code, ";\ninicio_loop_", num, ": ;\nif (!(");
+                        char *p2 = cat(p1, $6->code, ")) goto fim_loop_", num, ";\n{\n");
                         char *p3 = cat(p2, $12->code, "}\ncontinuar_", num, ":\n");
-                        char *p4 = cat(p3, $8->code, ";\ngoto inicio_", num, ";\nfim_");
+                        char *p4 = cat(p3, $8->code, ";\ngoto inicio_loop_", num, ";\nfim_loop_");
 
                         $$ = createRecord(cat(p4, num, ": ;\n}", "", ""), NULL);
 
@@ -752,9 +753,9 @@ lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE
                         char lacoId[32];
                         sprintf(lacoId, "%d", id);
 
-                        char *p1 = cat("inicio_enquanto_", lacoId, ":\nif (!(", $3->code, ")) goto fim_enquanto_");
+                        char *p1 = cat("inicio_loop_", lacoId, ":\nif (!(", $3->code, ")) goto fim_loop_");
                         char *p2 = cat(p1, lacoId, ";\n", $7->code, "\n");
-                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\nfim_enquanto_", lacoId, ": ;");
+                        char *p3 = cat("goto inicio_loop_", lacoId, ";\nfim_loop_", lacoId, ": ;");
 
                         $$ = createRecord(cat(p2, p3, "", "", ""), NULL);
 
@@ -801,7 +802,7 @@ controle            : PARE_TOK      {
                         }
                         else {
                             char buf[32];
-                            sprintf(buf, "goto fim_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            sprintf(buf, "goto fim_loop_%d", lacos.ids[lacos.topo - 1]);
                             $$ = createRecord(strdup(buf), NULL);
                         }
                     } 
@@ -812,7 +813,7 @@ controle            : PARE_TOK      {
                         }
                         else {
                             char buf[32];
-                            sprintf(buf, "goto inicio_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            sprintf(buf, "goto inicio_loop_%d", lacos.ids[lacos.topo - 1]);
                             $$ = createRecord(strdup(buf), NULL);
                         }
                     }

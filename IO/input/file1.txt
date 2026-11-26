@@ -1,12 +1,6 @@
 inteiro i = 0;
 
-enquanto (i < 5) {
+enquanto (i < 10) {
+    saida("i: ", i, "\n");
     i++;
-    se (i == 2) {
-        continue;
-    };
-    se (i == 4) {
-        pare;
-    };
 };
-//pare;
