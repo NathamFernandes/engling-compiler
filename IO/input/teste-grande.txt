@@ -1,9 +1,0 @@
-constante inteiro x = 10;
-constante caracter z = 'a';
-
-tipo {
-    inteiro a;
-    inteiro b;
-} MeuTipo;
-
-inteiro a = 10 + 20;

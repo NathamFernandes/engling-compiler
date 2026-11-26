@@ -1,32 +1,50 @@
 CC = gcc
-CFLAGS = -Wall -g -Ilib
+CFLAGS = -Wall -g -Ilib -Ibuild
 
-TARGET = compiler
+SRC_DIR   = src
+LIB_DIR   = lib
+BUILD_DIR = build
+TEST_DIR  = tests
+C_OUT_DIR = $(TEST_DIR)/c_gerado
+BIN_DIR   = $(BUILD_DIR)/bin
 
-# Arquivos fontes das estruturas de dados em ./lib
-#LIB_SRCS = lib/pilha.c lib/hash_table.c lib/erros.c lib/record.c lib/tipos.c
-LIB_SRCS = lib/*.c
+TARGET   = $(BUILD_DIR)/compiler
+LIB_SRCS = $(wildcard $(LIB_DIR)/*.c)
 
-# Arquivos gerados pelo Flex e Bison
-LEX_GEN = lex.yy.c
-YACC_GEN = y.tab.c y.tab.h y.output y.vcg
+LEX_C  = $(BUILD_DIR)/lex.yy.c
+YACC_C = $(BUILD_DIR)/y.tab.c
+YACC_H = $(BUILD_DIR)/y.tab.h
+
+ARG  := $(word 2, $(MAKECMDGOALS))
+NOME := $(basename $(notdir $(ARG)))
 
 all: $(TARGET)
 
-# Passo final: compila e linka tudo no executável 'compiler'
-$(TARGET): y.tab.c lex.yy.c $(LIB_SRCS)
-	$(CC) $(CFLAGS) lex.yy.c y.tab.c $(LIB_SRCS) -o $(TARGET)
+$(TARGET): $(YACC_C) $(LEX_C) $(LIB_SRCS)
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(LEX_C) $(YACC_C) $(LIB_SRCS) -o $(TARGET)
 
-# Gera o parser (y.tab.c e y.tab.h) a partir do parser.y
-y.tab.c y.tab.h: parser.y
-	bison parser.y -o y.tab.c -d -v -g
+$(YACC_C) $(YACC_H): $(SRC_DIR)/parser.y
+	@mkdir -p $(BUILD_DIR)
+	bison $(SRC_DIR)/parser.y -o $(YACC_C) -d -v -g
 
-# Gera o lexer (lex.yy.c) a partir do lexer.l (depende de y.tab.h existir)
-lex.yy.c: lexer.l y.tab.h
-	flex lexer.l
+$(LEX_C): $(SRC_DIR)/lexer.l $(YACC_H)
+	@mkdir -p $(BUILD_DIR)
+	flex -o $(LEX_C) $(SRC_DIR)/lexer.l
 
-# Limpa todos os arquivos gerados para recompilar do zero
+# Traduz .nan -> .c em tests/c_gerado/ e compila o binário em build/bin/
+# Uso: make compile problema1.nan
+compile: $(TARGET)
+	@mkdir -p $(C_OUT_DIR) $(BIN_DIR)
+	$(eval ARQ_PATH := $(shell find $(TEST_DIR) -path $(C_OUT_DIR) -prune -o -name "$(ARG)" -print | head -n 1))
+	@if [ -z "$(ARQ_PATH)" ]; then echo "Erro: '$(ARG)' nao encontrado em $(TEST_DIR)/"; exit 1; fi
+	./$(TARGET) $(ARQ_PATH) $(C_OUT_DIR)/$(NOME).c
+	$(CC) -I$(LIB_DIR) $(C_OUT_DIR)/$(NOME).c -o $(BIN_DIR)/$(NOME) -lm
+
+%:
+	@:
+
 clean:
-	rm -f $(TARGET) $(LEX_GEN) $(YACC_GEN)
+	rm -rf $(BUILD_DIR)/* $(C_OUT_DIR)/*.c
 
-.PHONY: all clean
+.PHONY: all compile clean

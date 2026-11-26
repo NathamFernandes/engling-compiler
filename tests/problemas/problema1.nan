@@ -4,7 +4,7 @@ flutuante y;
 
 saida("insira os valores: \n");
 
-entrada(c, x, y);
+entrada(x, y, c);
 
 flutuante final = x^2 - y + c;
 

@@ -1,3 +1,0 @@
-// procedimento com 1 parâmetro
-
-procedimento minhaFuncao(vetor<caracter> x) {};

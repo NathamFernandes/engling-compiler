@@ -2,7 +2,7 @@
 #define TABELA_SIMBOLOS_H
 
 #include "pilha.h"
-#include "tipos.h"
+#include "semantica.h"
 
 #define TAMANHO_TABELA 101
 

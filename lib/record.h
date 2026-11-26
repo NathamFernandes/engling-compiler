@@ -1,7 +1,7 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-#include "tipos.h"
+#include "semantica.h"
 
 typedef struct record {
     char *code;

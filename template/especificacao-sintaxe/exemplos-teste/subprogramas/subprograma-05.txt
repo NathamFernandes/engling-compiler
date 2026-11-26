@@ -1,5 +1,0 @@
-// procedimento com 0 parâmetro
-
-procedimento minhaFuncao() {
-    inteiro x;
-};

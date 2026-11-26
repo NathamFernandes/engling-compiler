@@ -9,7 +9,6 @@
 #include "hash_table.h"
 #include "record.h"
 #include "erros.h"
-#include "tipos.h"
 #include "semantica.h"
 
 #define MAX_LACO 64
@@ -54,19 +53,6 @@ int struct_counter = 0;
 
 int novoEscopo(pilha *pilha, const char *prefixo, int *contador);
 void fecharEscopo();
-
-char* especificador_tipo(Tipo *t) {
-    if (!t) return "";
-    switch (t->categoria) {
-        case T_INTEIRO:
-        case T_BOOLEANO:  return "%d";
-        case T_FLUTUANTE: return "%f";
-        case T_DECIMAL:   return "%lf";
-        case T_CARACTER:  return "%c";
-        case T_TEXTO:     return "%s";
-        default:          return "";
-    }
-}
 
 %}
 
@@ -158,7 +144,7 @@ programa    : cabecalho subprogramas instrucoes {
                 // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
                     // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
-                    char *temp_final = cat("#include <stdio.h>\n#include <math.h>\n", $1->code, "\n", $2->code, "\n");
+                    char *temp_final = cat("#include \"runtime.h\"\n\n", $1->code, "\n", $2->code, "\n");
                     char *codigo_final = cat(temp_final, "int main() {\n", $3->code, "};", "");
                     // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
                     // se for null, ai só faz um printf no console mesmo do C simplificado
