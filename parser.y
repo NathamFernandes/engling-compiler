@@ -12,11 +12,8 @@
 #include "tipos.h"
 #include "semantica.h"
 
-<<<<<<< HEAD
-=======
 #define MAX_LACO 64
 
->>>>>>> semantica_while
 // declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
 HashTable *hash_table;
@@ -387,15 +384,12 @@ instrucao   : declaracao            { $$ = $1; }
             | atribuicao            { $$ = $1; }
             | condicionalSe         { $$ = $1; }
             | condicionalCaso       {}
-            | lacoPara              {}
+            | lacoPara              { $$ = $1; }
             | lacoEnquanto          { $$ = $1; }
-<<<<<<< HEAD
             | chamadaSubprograma    { $$ = $1; }
             | controle              {}
-=======
             | chamadaSubprograma    {}
             | controle              { $$ = $1; }
->>>>>>> semantica_while
             | retorno               {}
             ;
 
@@ -678,8 +672,66 @@ listaCasos          :                                                       {}
                     | listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes  {} 
                     ;
 
-lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {
-                            
+lacoPara            : PARA_TOK A_PARENTESE 
+                    {
+                        int id = novoEscopo(pilha_escopos, "para", &lacos.id);
+                        //lacos.ids[lacos.topo++] = id;
+
+                        char lacoId[32];
+                        sprintf(lacoId, "inicio_para_%d", id);
+                        $<iValue>$ = id;
+                    }
+                    inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE 
+                    {
+                        char corpoLaco[32];
+                        sprintf(corpoLaco, "para_corpo_%d", $<iValue>3);
+                        push(pilha_escopos, corpoLaco);
+
+                        lacos.ids[lacos.topo++] = $<iValue>3;
+                    } 
+                    instrucoes 
+                    {
+                        fecharEscopo();
+                        lacos.topo--;
+                    }
+                    F_CHAVE 
+                    {
+                        int id = $<iValue>3;
+                        char num[16];
+                        sprintf(num, "%d", id);
+
+                        verificarCondicaoBool($6, "para", yylineno);
+                        /* para (inteiro i = 0; i < 5; i++)  -> condição booleana, ok
+                         * para (inteiro i = 0; i; i++)      -> inteiro, erro semântico */
+
+                        /* {
+                         * int i = 0;
+                         * inicio_1: ;
+                         * if (!(i < 5)) goto fim_1;
+                         * {
+                         * <corpo>}
+                         * continuar_1:
+                         * i++;
+                         * goto inicio_1;
+                         * fim_1: ;
+                         * }                                                          */
+                        char *p1 = cat("{\n", $4->code, ";\ninicio_", num, ": ;\nif (!(");
+                        char *p2 = cat(p1, $6->code, ")) goto fim_", num, ";\n{\n");
+                        char *p3 = cat(p2, $12->code, "}\ncontinuar_", num, ":\n");
+                        char *p4 = cat(p3, $8->code, ";\ngoto inicio_", num, ";\nfim_");
+
+                        $$ = createRecord(cat(p4, num, ": ;\n}", "", ""), NULL);
+
+                        free(p1);
+                        free(p2);
+                        free(p3);
+                        free(p4);
+                        freeRecord($4);     /* inicialização */
+                        freeRecord($6);     /* condição */
+                        freeRecord($8);     /* incremento */
+                        freeRecord($12);    /* corpo */
+
+                        pop(pilha_escopos); /* fecha o escopo do cabeçalho */
                     }
                     ;
 

@@ -1,12 +1,15 @@
-inteiro i = 0;
+inteiro total = 0;
 
-enquanto (i < 5) {
-    i++;
-    se (i == 2) {
+para (inteiro i = 0; i < 5; i++) {
+    se (i == 1) {
         continue;
     };
-    se (i == 4) {
+    se (i == 3) {
         pare;
     };
+    total++;
 };
-//pare;
+
+para (inteiro i = 0; i < 2; i++) {
+    total++;
+};
