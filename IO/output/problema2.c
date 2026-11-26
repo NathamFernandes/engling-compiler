@@ -1,5 +1,19 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+
+typedef struct {
+    void *dados;
+    int tamanho;
+} Vetor;
+
+Vetor criar_vetor(int tam, size_t elem_size) {
+    Vetor v;
+    v.dados = calloc(tam, elem_size);
+    v.tamanho = tam;
+    return v;
+}
+
 
 
 

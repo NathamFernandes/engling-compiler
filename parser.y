@@ -48,6 +48,21 @@ char* especificador_tipo(Tipo *t) {
     }
 }
 
+char* tipo_para_c(Tipo *t) {
+    if (!t) return "void";
+    switch (t->categoria) {
+        case T_INTEIRO:
+        case T_BOOLEANO:  return "int";
+        case T_FLUTUANTE: return "float";
+        case T_DECIMAL:   return "double";
+        case T_CARACTER:  return "char";
+        case T_TEXTO:     return "char*";
+        case T_VETOR:     return "Vetor";
+        case T_USUARIO:   return t->nome_tipo ? t->nome_tipo : "void";
+        default:          return "int"; // fallback seguro para T_ERRO
+    }
+}
+
 %}
 
 // acho que essa union é como uma capsula que armazena o valor atual
@@ -135,28 +150,37 @@ char* especificador_tipo(Tipo *t) {
 %%
 
 programa    : cabecalho subprogramas instrucoes { 
-                // se n capturou nenhum erro, faz a compilação para C simplificado
                 if (totalErros() == 0) {
-                    // concatena os códigos de "cabecalho", "subprogramas" e "instrucoes"
-                    char *temp_final = cat("#include <stdio.h>\n#include <math.h>\n", $1->code, "\n", $2->code, "\n");
+                    char *runtime_c =
+                        "#include <stdio.h>\n"
+                        "#include <stdlib.h>\n"
+                        "#include <math.h>\n\n"
+                        "typedef struct {\n"
+                        "    void *dados;\n"
+                        "    int tamanho;\n"
+                        "} Vetor;\n\n"
+                        "Vetor criar_vetor(int tam, size_t elem_size) {\n"
+                        "    Vetor v;\n"
+                        "    v.dados = calloc(tam, elem_size);\n"
+                        "    v.tamanho = tam;\n"
+                        "    return v;\n"
+                        "}\n\n";
+
+                    char *temp_final = cat(runtime_c, $1->code, "\n", $2->code, "\n");
                     char *codigo_final = cat(temp_final, "int main() {\n", $3->code, "};", "");
-                    // se o arquivo de saida não for um ponteiro null, cospe o C simplificado no arquivo
-                    // se for null, ai só faz um printf no console mesmo do C simplificado
+
                     if (arquivo_saida != NULL) {
                         fprintf(arquivo_saida, "%s\n", codigo_final);
                     } else {
                         printf("%s\n", codigo_final);
                     }
 
-                    // libera ponteiro do char* declarado. mt importante sempre dar free.
                     free(temp_final);
                     free(codigo_final);
                 } else {
-                    // se tiver erro, mostra quantos
                     printf("Compilação abortada com %d erros(s).\n", totalErros());
                 }
 
-                // libera os records dos não terminais RHS "cabecalho", "subprogramas", "instrucoes"
                 freeRecord($1);
                 freeRecord($2);
                 freeRecord($3);
@@ -492,7 +516,41 @@ variavel
          * cópia para o record, então o original não é mais necessário. */
     }
     | variavel PONTO ID                             {}
-    | variavel A_COLCHETE expressao F_COLCHETE      {}
+| variavel A_COLCHETE expressao F_COLCHETE {
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if ($1->type->categoria != T_VETOR) {
+            if ($1->type->categoria != T_ERRO) {
+                printErro(ERRO_SEMANTICO, yylineno, "tentativa de indexar algo que nao e um vetor.");
+            }
+            goto fim_indexacao;
+        }
+
+        if ($3->type->categoria != T_INTEIRO && $3->type->categoria != T_ERRO) {
+            printErro(ERRO_SEMANTICO, yylineno, "indice de vetor deve ser um numero inteiro.");
+            goto fim_indexacao;
+        }
+
+        Tipo *tipo_elem = $1->type->subtipo;
+        const char *tipo_elem_c = tipo_para_c(tipo_elem);
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        // Gera: ((int*)(v).dados)[i]
+        // Para matriz m[i][j], encadeia naturalmente:
+        // 1º nível: ((Vetor*)(m).dados)[i]
+        // 2º nível: ((double*)(((Vetor*)(m).dados)[i]).dados)[j]
+        char *p1 = cat("((", tipo_elem_c, "*)(", $1->code, ").dados)[");
+        $$->code = cat(p1, $3->code, "]", "", "");
+        $$->type = clonar_tipo(tipo_elem);
+
+        free(p1);
+
+    fim_indexacao:
+        freeRecord($1);
+        freeRecord($3);
+    }
     ;
 
 apenasAtribuicao : variavel OPERADOR_ATRIBUICAO expressao            {
@@ -837,7 +895,30 @@ expressaoExponencial
     ;
 
 expressaoUnaria
-    : expressaoPosfixa                                      { $$ = $1; }
+    : expressaoPosfixa { $$ = $1; }
+    | OPERADOR_TAMANHO expressaoUnaria {
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if ($2->type->categoria != T_VETOR && $2->type->categoria != T_TEXTO) {
+            if ($2->type->categoria != T_ERRO) {
+                printErro(ERRO_SEMANTICO, yylineno, "operador '#' exige vetor ou texto.");
+            }
+            goto fim_tamanho;
+        }
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        if ($2->type->categoria == T_VETOR) {
+            $$->code = cat("(", $2->code, ").tamanho", "", "");
+        } else {
+            $$->code = cat("strlen(", $2->code, ")", "", "");
+        }
+        $$->type = criar_tipo(T_INTEIRO, NULL, NULL);
+
+    fim_tamanho:
+        freeRecord($2);
+    }
     | operadorUnario expressaoUnaria                        { $$ = NULL; }
     | A_PARENTESE tipoCast F_PARENTESE expressaoUnaria      { $$ = NULL; }
     ;
@@ -883,7 +964,38 @@ termo
         $$ = createRecord(cod, clonar_tipo($2->type));
         freeRecord($2);
     }
-    | NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE { $$ = NULL; }
+| NOVO tipo A_PARENTESE listaExpressoesOpcional F_PARENTESE {
+        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+        if ($2->type->categoria != T_VETOR) {
+            if ($2->type->categoria != T_ERRO) {
+                printErro(ERRO_SEMANTICO, yylineno, "operador 'novo' exige um tipo vetor.");
+            }
+            goto fim_novo;
+        }
+
+        if ($4->type == NULL || $4->type->categoria != T_INTEIRO) {
+            if ($4->type == NULL || $4->type->categoria != T_ERRO) {
+                printErro(ERRO_SEMANTICO, yylineno, "o tamanho do vetor deve ser um numero inteiro.");
+            }
+            goto fim_novo;
+        }
+
+        const char *tipo_elem_c = tipo_para_c($2->type->subtipo);
+
+        free($$->code);
+        liberar_tipo($$->type);
+
+        // Gera: criar_vetor(tamanho, sizeof(int))
+        // Se for vetor<vetor<inteiro>>, $2->type->subtipo é T_VETOR, então gera: criar_vetor(tamanho, sizeof(Vetor))
+        char *p1 = cat("criar_vetor(", $4->code, ", sizeof(", tipo_elem_c, "))");
+        $$->code = p1;
+        $$->type = clonar_tipo($2->type);
+
+    fim_novo:
+        freeRecord($2);
+        freeRecord($4);
+    }
     ;
 
 sufixoId
@@ -897,15 +1009,26 @@ listaIndexacao
     ;
 
 listaExpressoesOpcional
-    :                                                       { $$ = NULL; }
-    | listaExpressoes                                       { $$ = NULL; }
+    : /* vazio */ {
+        $$ = createRecord(strdup(""), NULL);
+    }
+    | listaExpressoes {
+        $$ = $1;
+    }
     ;
 
 listaExpressoes
-    : expressao                                             { $$ = NULL; }
-    | listaExpressoes VIRGULA expressao                     { $$ = NULL; }
+    : expressao {
+        $$ = $1;
+    }
+    | listaExpressoes VIRGULA expressao {
+        // Útil caso use no futuro para outras coisas com múltiplos argumentos
+        char *cod = cat($1->code, ", ", $3->code, "", "");
+        $$ = createRecord(cod, clonar_tipo($1->type));
+        freeRecord($1);
+        freeRecord($3);
+    }
     ;
-
 tipoCast            : tipoEscalar                   { $$ = $1; }
                     | tipoDimensional               { $$ = $1; }
                     ;
@@ -938,9 +1061,7 @@ tipoEscalar         : TIPO_INTEIRO      { $$ = createRecord(strdup("int"), criar
 
 tipoDimensional     : TIPO_VETOR MENOR tipo MAIOR {
                         Tipo *t_vetor = criar_tipo(T_VETOR, NULL, clonar_tipo($3->type));
-                        char *cod_c = cat($3->code, "*", "", "", "");
-
-                        $$ = createRecord(cod_c, t_vetor);
+                        $$ = createRecord(strdup("Vetor"), t_vetor);
                         freeRecord($3);
                     }
                     ;

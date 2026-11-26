@@ -1,0 +1,10 @@
+vetor<inteiro> v = novo vetor<inteiro>(3);
+v[0] = 10;
+v[1] = 20;
+inteiro tam = #v;
+
+vetor<vetor<decimal>> m = novo vetor<vetor<decimal>>(2);
+m[0] = novo vetor<decimal>(2);
+m[0][1] = 7.5;
+
+saida(v[0], " ", m[0][1], " ", tam);
