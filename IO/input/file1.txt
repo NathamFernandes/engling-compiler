@@ -1,18 +1,12 @@
-constante inteiro a = 10;
-constante flutuante b = a;
-//constante inteiro c = "texto"; 
-//constante inteiro a = 5;       
-//constante inteiro z = d;
+inteiro i = 0;
 
-se (a > 2) {
-    inteiro t = 0;
-} senaose (a > 11) {
-    inteiro s = 0;
-} senao {
-    inteiro r = 0;
+enquanto (i < 5) {
+    i++;
+    se (i == 2) {
+        continue;
+    };
+    se (i == 4) {
+        pare;
+    };
 };
-
-enquanto (a) {
-    inteiro o = 0;
-    break;
-};
+//pare;

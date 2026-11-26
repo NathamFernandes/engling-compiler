@@ -12,6 +12,11 @@
 #include "tipos.h"
 #include "semantica.h"
 
+<<<<<<< HEAD
+=======
+#define MAX_LACO 64
+
+>>>>>>> semantica_while
 // declaração da tabela de simbolos e pilha com escopos
 pilha *pilha_escopos;
 HashTable *hash_table;
@@ -28,12 +33,18 @@ extern FILE *yyin;
 // arquivo .c de saída (c simplificado)
 FILE *arquivo_saida = NULL;
 
-int struct_counter = 0;
-int profundidade_laco = 0;
-int id_labels = 0;
+typedef struct {
+    int id;                 // Atribui identificador unico ao label do laço.
+    int ids[MAX_LACO];      // Identificadores dos laços abertos (o id to topo é o id do laço mais interno em um aninhamento).
+    int topo;               // Retorna o id do laço mais interno.
+} ControleLaco;
 
-void novoEscopo(pilha *pilha, const char *prefixo, int *contador);
-void fecharEscopo(int *contador);
+ControleLaco lacos;
+
+int struct_counter = 0;
+
+int novoEscopo(pilha *pilha, const char *prefixo, int *contador);
+void fecharEscopo();
 
 char* especificador_tipo(Tipo *t) {
     if (!t) return "";
@@ -77,8 +88,8 @@ char* especificador_tipo(Tipo *t) {
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional 
 %type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
 %type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
-%type <rec> lacoEnquanto controle
 %type <rec> parametrosChamada chamadaSubprograma
+%type <rec> lacoEnquanto lacoPara controle
 
 // declaração dos Types (LHS) que são apenas strings
 %type <sValue> operadorRelacional operadorUnario
@@ -378,8 +389,13 @@ instrucao   : declaracao            { $$ = $1; }
             | condicionalCaso       {}
             | lacoPara              {}
             | lacoEnquanto          { $$ = $1; }
+<<<<<<< HEAD
             | chamadaSubprograma    { $$ = $1; }
             | controle              {}
+=======
+            | chamadaSubprograma    {}
+            | controle              { $$ = $1; }
+>>>>>>> semantica_while
             | retorno               {}
             ;
 
@@ -662,25 +678,35 @@ listaCasos          :                                                       {}
                     | listaCasos CASO_TOK expressao DOIS_PONTOS instrucoes  {} 
                     ;
 
-lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+lacoPara            : PARA_TOK A_PARENTESE inicializacao TERMINADOR expressao TERMINADOR apenasAtribuicao F_PARENTESE A_CHAVE instrucoes F_CHAVE {
+                            
+                    }
                     ;
 
-lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE { novoEscopo(pilha_escopos, "enquanto", &profundidade_laco); } instrucoes { fecharEscopo(&profundidade_laco); } F_CHAVE {
-                        bool condicaoValida = verificarCondicaoBool($3, "enquanto", yylineno);
+lacoEnquanto        : ENQUANTO_TOK A_PARENTESE expressao F_PARENTESE A_CHAVE 
+                    { 
+                            int id = novoEscopo(pilha_escopos, "enquanto", &lacos.id); 
+                            lacos.ids[lacos.topo++] = id;
+                            $<iValue>$ = id;
+                    } 
+                    instrucoes 
+                    { 
+                            fecharEscopo(); 
+                            lacos.topo--;
+                    } 
+                    F_CHAVE 
+                    {
+                        verificarCondicaoBool($3, "enquanto", yylineno);
 
-                        if (!condicaoValida) {
-                            printErro(ERRO_SEMANTICO, yylineno, "Argumento não corresponde a uma expressao booleana.");
-                        }
-
+                        int id = $<iValue>6;
                         char lacoId[32];
-                        sprintf(lacoId, "%d", profundidade_laco);
+                        sprintf(lacoId, "%d", id);
 
-                        char *p1 = cat("inicio_enquanto_", lacoId, ": \n if (!(", $3->code, ")) goto fim_enquanto_");
-                        char *p2 = cat(p1, lacoId, ";\n { \n", $7->code, "}\n");
-                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\n fim_enquanto_", lacoId, ": ;");
+                        char *p1 = cat("inicio_enquanto_", lacoId, ":\nif (!(", $3->code, ")) goto fim_enquanto_");
+                        char *p2 = cat(p1, lacoId, ";\n", $7->code, "\n");
+                        char *p3 = cat("goto inicio_enquanto_", lacoId, ";\nfim_enquanto_", lacoId, ": ;");
 
                         $$ = createRecord(cat(p2, p3, "", "", ""), NULL);
-                        //$$ = createRecord(cat("while (", $3->code, ") {\n", $7->code, "}"), NULL);
 
                         free(p1);
                         free(p2);
@@ -718,8 +744,28 @@ chamadaSubprograma
     }
     ;
 
-controle            : PARE_TOK      {} 
-                    | CONTINUE_TOK  {}
+controle            : PARE_TOK      {
+                        if (lacos.topo == 0) {
+                            printErro(ERRO_SEMANTICO, yylineno, "comando 'pare' fora de um laço.");
+                            $$ = createRecord(strdup(""), NULL);
+                        }
+                        else {
+                            char buf[32];
+                            sprintf(buf, "goto fim_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            $$ = createRecord(strdup(buf), NULL);
+                        }
+                    } 
+                    | CONTINUE_TOK  {
+                        if (lacos.topo == 0) {
+                            printErro(ERRO_SEMANTICO, yylineno, "comando 'continuar' fora de um laço.");
+                            $$ = createRecord(strdup(""), NULL);
+                        }
+                        else {
+                            char buf[32];
+                            sprintf(buf, "goto inicio_enquanto_%d", lacos.ids[lacos.topo - 1]);
+                            $$ = createRecord(strdup(buf), NULL);
+                        }
+                    }
                     ;
 
 retorno             : RETORNE_TOK expressao {}
@@ -999,14 +1045,16 @@ int yyerror (char *msg) {
 }
 
 
-void novoEscopo(pilha *pilha, const char *prefixo, int *contador) {
+int novoEscopo(pilha *pilha, const char *prefixo, int *contador) {
+    int id = ++(*contador);
     char idEscopo[64];
     sprintf(idEscopo, "%s_%d", prefixo, ++(*contador));
 
     push(pilha_escopos, idEscopo);
+
+    return id;
 }
 
-void fecharEscopo(int *contador) {
+void fecharEscopo() {
     pop(pilha_escopos);
-    (*contador)--;
 }
