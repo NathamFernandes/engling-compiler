@@ -30,6 +30,7 @@ extern FILE *yyin;
 // arquivo .c de saída (c simplificado)
 FILE *arquivo_saida = NULL;
 
+// Struct para gerenciar escopos de loops
 typedef struct {
     int id;                 // Atribui identificador unico ao label do laço.
     int ids[MAX_LACO];      // Identificadores dos laços abertos (o id to topo é o id do laço mais interno em um aninhamento).
