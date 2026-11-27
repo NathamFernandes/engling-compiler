@@ -83,7 +83,7 @@ void fecharEscopo();
 %type <rec> instrucao condicionalSe listaSenaoSe senaoOpcional 
 %type <rec> declaracao atribuicao inicializacao apenasAtribuicao cremento variavel
 %type <rec> novoTipoUsuario tipoUsuarioDeclaracoes
-%type <rec> parametrosChamada chamadaSubprograma
+%type <rec> parametrosChamada chamadaSubprograma subprograma funcao procedimento
 %type <rec> lacoEnquanto lacoPara controle
 
 // declaração dos Types (LHS) que são apenas strings
@@ -311,16 +311,65 @@ tipoUsuarioDeclaracoes  : declaracao TERMINADOR {
                         ;
 
 subprogramas    :                                       { $$ = createRecord(strdup(""), NULL); }
-                | subprogramas subprograma TERMINADOR   { $$ = createRecord(strdup(""), NULL); }
+                | subprogramas subprograma TERMINADOR   { 
+                    // concatenação
+                    char *code_subprogramas = cat($1->code, "", $2->code, ";\n", "");
+                    // free dos não terminais
+                    freeRecord($1);
+                    freeRecord($2);
+                    // subida record com codigo concatenado para o pai
+                    $$ = createRecord(strdup(code_subprogramas), NULL);    
+                    // free no ponteiro
+                    free(code_subprogramas);
+                }
                 ;
 
-subprograma     : funcao | procedimento {}
+subprograma     : funcao { $$ = $1; }
+                | procedimento { $$ = $1; }
                 ;
 
-funcao          : FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+funcao          : FUNCAO tipo ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes retorno F_CHAVE 
+                {
+                    $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+
+                    // simbolo *sym_func = buscar_simbolo(hash_table, pilha_escopos, $3);
+
+                    // if (sym_func != NULL) {
+                    //     printErro(ERRO_SEMANTICO, yylineno, "função '%s' já declarada na linha %d.", $3, sym_func->linha_declaracao);
+                    //     goto fim_funcao;
+                    // }
+
+                    // bool sao_compativeis = tipos_compativeis($2->type, $9->type);
+
+                        
+
+                        
+
+                        
+                    //     inserir_simbolo(hash_table, pilha_escopos, $2, $1->type, CAT_VARIAVEL, yylineno);
+
+                    //     free($$->code);
+                    //     liberar_tipo($$->type);
+
+                    //     $$->code = cat($1->code, " ", $2, "", "");
+                    //     $$->type = clonar_tipo($1->type);
+                        
+                    // fim_declaracao:
+                    //     freeRecord($1);
+                    //     free($2);
+                    // } 
+
+                    // if (!sao_compativeis) {
+                    //     printErro(ERRO_SEMANTICO, yylineno, "tipo de retorno incompatível com o tipo da função.");
+                    // }
+
+                    
+                }
                 ;
 
-procedimento    : PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {}
+procedimento    : PROCEDIMENTO ID A_PARENTESE parametros F_PARENTESE A_CHAVE instrucoes F_CHAVE {
+                        $$ = createRecord(strdup(""), criar_tipo(T_ERRO, NULL, NULL));
+}
                 ;
 
 parametros      :                                           {}
@@ -386,7 +435,6 @@ instrucao   : declaracao            { $$ = $1; }
             | lacoEnquanto          { $$ = $1; }
             | chamadaSubprograma    { $$ = $1; }
             | controle              { $$ = $1; }
-            | retorno               {}
             ;
 
 atribuicao          : inicializacao       { $$ = $1; }
